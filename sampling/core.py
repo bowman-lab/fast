@@ -487,7 +487,7 @@ class AdaptiveSampling(base):
         print(
             "\nclustering object:\n" + push_forward(str(self.cluster_obj), 4))
         print("\nanalysis object:\n" + push_forward(str(self.analysis_obj), 4))
-        print("\nMSM object:\n" + push_forward(str(self.msm_obj), 4))
+#        print("\nMSM object:\n" + push_forward(str(self.msm_obj), 4))
         print("\nranking object:\n" + push_forward(str(self.ranking_obj), 4))
         print("\nsubmission object:\n" + push_forward(str(self.sub_obj), 4))
         print(

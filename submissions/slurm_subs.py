@@ -60,14 +60,24 @@ def _gen_header(
 
 def get_running_jobs():
     """Finds jobs that are currently running"""
-    running_jobs = np.array(
-        [
-            s.split() for s in 
-            tools.run_commands('squeue')[0].split("\n")[:-1]])[:,0]
-    if running_jobs[0] != 'JOBID':
+    try:
+        squeue_output = tools.run_commands('squeue')[0]
+        job_listing_information = squeue_output.split("\n")[:-1]
+        running_jobs = np.array(
+            [
+                s.split() for s in 
+                job_listing_information])[:,0]
+        if running_jobs[0] != 'JOBID':
+            raise
+        else:
+            running_jobs = running_jobs[1:]
+    except:
+        print("an error has occured with finding jobs...")
+        print("for error checking purposes: ")
+        print(squeue_output)
+        print(job_listing_information)
+        print(running_jobs)
         raise
-    else:
-        running_jobs = running_jobs[1:]
     return running_jobs
 
 class SlurmWrap(base):
