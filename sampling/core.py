@@ -537,6 +537,23 @@ class AdaptiveSampling(base):
                     " exist!")
             gen_num = _determine_gen(self.output_dir)
             logging.info('continuing adaptive sampling from run %d' % gen_num)
+            # try to move and cluster
+            try:
+                # move trajectories
+                _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
+                logging.info('moving trajectories')
+                # submit clustering job
+                logging.info('clustering simulation data')
+                t_pre = time.time()
+                self.cluster_obj.build_full = True
+                _pickle_submit(
+                    self.msm_dir, self.cluster_obj, self.sub_obj,
+                    self.q_check_obj, gen_num, 'clusterer')
+                self.cluster_obj.check_clustering(self.msm_dir, gen_num, self.n_kids)
+                t_post = time.time()
+                logging.info("clustering took " + str(t_post - t_pre) + " seconds")
+            except:
+                pass
 
         # determine if updating data
         if int(gen_num % self.update_freq) == 0:
