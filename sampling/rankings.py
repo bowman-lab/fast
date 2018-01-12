@@ -66,6 +66,75 @@ def _unbias_state_selection(states, rankings, n_selections, select_max=True):
     return sorted_states[:n_selections]
 
 
+def _select_states_spreading(
+        rankings, unique_states, n_clones, centers, distance_metric,
+        select_max=True, width=1.0, non_overlap=True):
+    """Selects states that maximize ranking and are structurally unique.
+    This proceeds as follows: 1) select a state that maximizes the
+    ranking 2) penalize states that are structurally similar to
+    previously selected, 3) select a new state that maximizes the
+    updated ranking, and 4) repeat 2-3 until n_clones are chosen.
+
+    Parameters
+    ----------
+    rankings : array, shape=(n_states,)
+        The list of state rankings.
+    unique_states : array, shape=(n_states,)
+        The list of state indices
+    n_clones : int,
+        Number of states to select.
+    centers : array-like,
+        A list of state centers.
+    distance_metric : function,
+        Function for calculating distances between state centers.
+    select_max : bool, default = True
+        Optionally select from maximum.
+    width : float, default = 1.0
+        Gaussian width for calculating penalties.
+    non_overlap : bool, default = True
+        Optionally ensure that states are not sampled with replacement.
+    
+    Returns
+    ----------
+    states_to_simulate : array, shape=(n_clones,)
+        The list of state indices to restart simulations from.
+    """
+    # pick the first state
+    states_to_simulate = [
+        _unbias_state_selection(
+            unique_states, rankings, 1, select_max=select_max)[0]]
+    # initialize distance list
+    dist_list = []
+    # iterate state selection
+    for num in range(n_clones-1):
+        # get distances to previously selected states
+        dist_list.append(
+            distance_metric(
+                centers[unique_states], centers[states_to_simulate[-1]]))
+        # convert distances to gaussian penalties
+        gaussian_weights = np.sum(
+            [
+                (1 - np.exp(-(dists**2)/float(2.0*(width**2))))
+                for dists in dist_list], axis=0) / len(dist_list)
+        # generate new rankings
+        new_rankings = rankings + gaussian_weights
+        # if only selecting new states, zero the rankings of those
+        # previously selected
+        if non_overlap:
+            states_to_zero = np.array(
+                [
+                    np.where(unique_states == state)[0]
+                    for state in states_to_simulate])
+            new_rankings[states_to_zero] = 0
+        # pick next state
+        states_to_simulate.append(
+            _unbias_state_selection(
+                unique_states, new_rankings, 1, select_max=select_max)[0])
+    # numpy it and return
+    states_to_simulate = np.array(states_to_simulate)
+    return states_to_simulate
+
+
 def get_unique_states(msm):
     """returns a list of the visited states within an msm object"""
     tcounts = msm.tcounts_
@@ -210,8 +279,13 @@ class base_ranking(base):
     """base ranking class. Pieces out selection of states from
     independent rankings"""
 
-    def __init__(self, maximize_ranking=True):
+    def __init__(
+            self, maximize_ranking=True, state_centers=None,
+            distance_metric=None, width=1.0):
         self.maximize_ranking = maximize_ranking
+        self.state_centers = state_centers
+        self.distance_metric = distance_metric
+        self.width = width
 
     def select_states(self, msm, n_clones):
         # determine discovered states from msm
@@ -230,10 +304,18 @@ class base_ranking(base):
                 states_to_simulate = _evens_select_states(
                     unique_states[non_nan_rank_iis], n_clones)
             else:
-                states_to_simulate = _unbias_state_selection(
-                    unique_states[non_nan_rank_iis],
-                    rankings[non_nan_rank_iis], n_clones,
-                    select_max=self.maximize_ranking)
+                if (self.state_centers is None) or (self.distance_metric is None):
+                    states_to_simulate = _unbias_state_selection(
+                        unique_states[non_nan_rank_iis],
+                        rankings[non_nan_rank_iis], n_clones,
+                        select_max=self.maximize_ranking)
+                else:
+                    states_to_simulate = _select_states_spreading(
+                        rankings[non_nan_rank_iis],
+                        unique_states[non_nan_rank_iis], n_clones,
+                        centers=self.state_centers,
+                        distance_metric=self.distance_metric,
+                        select_max=self.maximize_ranking, width=self.width)
         return states_to_simulate
 
 
@@ -242,7 +324,7 @@ class page_ranking(base_ranking):
 
     def __init__(
             self, d, init_pops=True, max_iters=100000, norm=True,
-            spreading=False, maximize_ranking=True):
+            spreading=False, maximize_ranking=True, **kwargs):
         """
         Parameters
         ----------
@@ -263,7 +345,8 @@ class page_ranking(base_ranking):
         self.max_iters = max_iters
         self.norm = norm
         self.spreading = spreading
-        base_ranking.__init__(self, maximize_ranking=maximize_ranking)
+        base_ranking.__init__(
+            self, maximize_ranking=maximize_ranking, **kwargs)
 
     @property
     def class_name(self):
@@ -301,8 +384,9 @@ class counts(base_ranking):
     """Min-counts ranking object. Ranks states based on their raw
     counts."""
 
-    def __init__(self, maximize_ranking=False):
-        base_ranking.__init__(self, maximize_ranking=maximize_ranking)
+    def __init__(self, maximize_ranking=False, **kwargs):
+        base_ranking.__init__(
+            self, maximize_ranking=maximize_ranking, **kwargs)
 
     @property
     def class_name(self):
@@ -329,7 +413,8 @@ class FAST(base_ranking):
             directed_scaling = scalings.feature_scale(maximize=True),
             statistical_component = counts(),
             statistical_scaling = scalings.feature_scale(maximize=False),
-            alpha = 1, alpha_percent=False, maximize_ranking=True):
+            alpha = 1, alpha_percent=False, maximize_ranking=True,
+            **kwargs):
         """
         Parameters
         ----------
@@ -359,7 +444,8 @@ class FAST(base_ranking):
         self.alpha_percent = alpha_percent
         if self.alpha_percent and ((self.alpha < 0) or (self.alpha > 1)):
             raise
-        base_ranking.__init__(self, maximize_ranking=maximize_ranking)
+        base_ranking.__init__(
+            self, maximize_ranking=maximize_ranking, **kwargs)
 
     @property
     def class_name(self):
@@ -423,11 +509,12 @@ class string(base_ranking):
     """
     def __init__(
             self, start_states, end_states, statistical_component=None,
-            maximize_ranking=False):
+            maximize_ranking=False, **kwargs):
         self.start_states = start_states
         self.end_states = end_states
         self.statistical_component = statistical_component
-        base_ranking.__init__(self, maximize_ranking=maximize_ranking)
+        base_ranking.__init__(
+            self, maximize_ranking=maximize_ranking, **kwargs)
 
     @property
     def class_name(self):
