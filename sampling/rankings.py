@@ -281,10 +281,11 @@ class base_ranking(base):
 
     def __init__(
             self, maximize_ranking=True, state_centers=None,
-            distance_metric=None):
+            distance_metric=None, width=1.0):
         self.maximize_ranking = maximize_ranking
         self.state_centers = state_centers
         self.distance_metric = distance_metric
+        self.width = width
 
     def select_states(self, msm, n_clones):
         # determine discovered states from msm
@@ -314,7 +315,7 @@ class base_ranking(base):
                         unique_states[non_nan_rank_iis], n_clones,
                         centers=self.state_centers,
                         distance_metric=self.distance_metric,
-                        select_max=self.maximize_ranking)
+                        select_max=self.maximize_ranking, width=self.width)
         return states_to_simulate
 
 

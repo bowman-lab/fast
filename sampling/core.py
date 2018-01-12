@@ -401,9 +401,9 @@ class AdaptiveSampling(base):
     def __init__(
             self, initial_state, n_gens=1, n_kids=1, sim_obj=None,
             cluster_obj=None, msm_obj=None, analysis_obj=None,
-            ranking_obj=None, update_freq=np.inf, continue_prev=False,
-            sub_obj=None, q_check_obj=None, output_dir='adaptive_sampling',
-            verbose=True):
+            ranking_obj=None, spreading_func=None, update_freq=np.inf,
+            continue_prev=False, sub_obj=None, q_check_obj=None,
+            output_dir='adaptive_sampling', verbose=True):
         # Initialize class variables
         self.sim_obj = sim_obj
         self.analysis_obj = analysis_obj
@@ -427,6 +427,7 @@ class AdaptiveSampling(base):
             self.ranking_obj = rankings.evens()
         else:
             self.ranking_obj = ranking_obj
+        self.spreading_func = spreading_func
         self.update_freq = update_freq
         self.continue_prev = continue_prev
         if sub_obj is None:
@@ -552,9 +553,15 @@ class AdaptiveSampling(base):
         logging.info('building MSM')
         self.msm_obj = _prop_msm(
             self.msm_dir, self.msm_obj)
+        # determine states to reseed and save for records
         if hasattr(self.ranking_obj, 'state_rankings'):
             self.ranking_obj.state_rankings = state_rankings
-        # determine states to reseed and save for records
+        if hasattr(self.ranking_obj, 'distance_metric'):
+            if self.ranking_obj.distance_metric is not None:
+                logging.info('loading centers for spreading')
+                self.ranking_obj.state_centers = md.load(
+                    self.msm_dir+'/data/full_centers.xtc',
+                    top=self.msm_dir+'/prot_masses.pdb')
         logging.info('ranking states\n')
         new_states = self.ranking_obj.select_states(self.msm_obj, self.n_kids)
         np.save(
@@ -610,6 +617,12 @@ class AdaptiveSampling(base):
             logging.info('ranking states\n')
             if hasattr(self.ranking_obj, 'state_rankings'):
                 self.ranking_obj.state_rankings = state_rankings
+            if hasattr(self.ranking_obj, 'distance_metric'):
+                if self.ranking_obj.distance_metric is not None:
+                    logging.info('loading centers for spreading')
+                    self.ranking_obj.state_centers = md.load(
+                        self.msm_dir+'/data/full_centers.xtc',
+                        top=self.msm_dir+'/prot_masses.pdb')
             new_states = self.ranking_obj.select_states(self.msm_obj, self.n_kids)
             np.save(
                 self.msm_dir + '/rankings/states_to_simulate_gen' + \
