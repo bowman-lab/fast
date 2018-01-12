@@ -33,6 +33,7 @@ def _run_command(cmd_info):
         print("\nERROR: " + convert_to_string(err))
         raise
     output = convert_to_string(output)
+    p.terminate()
     return output
 
 
