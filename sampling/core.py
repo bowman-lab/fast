@@ -432,7 +432,7 @@ class AdaptiveSampling(base):
         self.continue_prev = continue_prev
         if sub_obj is None:
             self.sub_obj = slurm_subs.SlurmSub(
-                'cpu.q', n_cpus=24, exclusive=True)
+                'msm.q', n_cpus=24, exclusive=True)
         else:
             self.sub_obj = sub_obj
         if q_check_obj is None:
