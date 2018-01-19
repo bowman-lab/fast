@@ -134,13 +134,13 @@ def save_states(
     for trj in unique_trjs:
         partitioned_centers_info.append(
             centers_location[np.where(centers_location['trj_num'] == trj)])
-    logging.debug("  Saving states!")
+    logging.info("  Saving states!")
     pool = Pool(processes=n_procs)
     pool.map(_save_states, partitioned_centers_info)
     pool.terminate()
 #    gc.collect()
     t1 = time.time()
-    logging.debug("    Finished in "+str(t1-t0)+" sec")
+    logging.info("    Finished in "+str(t1-t0)+" sec")
     return
 
 
