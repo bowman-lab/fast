@@ -233,10 +233,19 @@ def _pickle_submit(
     sub_script_name = q_check_obj.get_submission_names(pid)[0]
     sub_output = 'submissions/' + base_name + '_gen' + \
         ('%03d' % gen_num) + '.out'
+    base_pickle_output = 'submissions/' + base_pickle + '_gen' + \
+        ('%03d' % gen_num) + '.pkl'
+    base_python_output = 'submissions/' + base_name + '_gen' + \
+        ('%03d' % gen_num) + '.py'
+    base_sub_output = 'submissions/' + base_submission + '_gen' + \ 
+        ('%03d' % gen_num)
     cmd1 = 'mv ' + sub_script_name + ' ' + sub_output + ' --backup=numbered'
-    cmd2 = 'rm ' + base_pickle
-    cmd3 = 'rm ' + base_name + ".py"
-    cmd4 = 'rm ' + base_submission
+    cmd2 = 'md ' + base_pickle + ' ' + base_pickle_output + \
+        ' --backup=numbered'
+    cmd3 = 'mv ' + base_name + ".py" + ' ' + base_python_output + \
+        ' --backup=numbered'
+    cmd4 = 'mv ' + base_submission + ' ' + base_sub_output + \
+        ' --backup=numbered'
     cmds = [cmd1, cmd2, cmd3, cmd4]
     _ = tools.run_commands(cmds)
     # change directory back to original
