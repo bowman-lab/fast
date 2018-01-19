@@ -240,7 +240,7 @@ def _pickle_submit(
     base_sub_output = 'submissions/' + base_submission + '_gen' + \
         ('%03d' % gen_num)
     cmd1 = 'mv ' + sub_script_name + ' ' + sub_output + ' --backup=numbered'
-    cmd2 = 'md ' + base_pickle + ' ' + base_pickle_output + \
+    cmd2 = 'mv ' + base_pickle + ' ' + base_pickle_output + \
         ' --backup=numbered'
     cmd3 = 'mv ' + base_name + ".py" + ' ' + base_python_output + \
         ' --backup=numbered'
