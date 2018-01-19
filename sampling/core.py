@@ -237,7 +237,7 @@ def _pickle_submit(
         ('%03d' % gen_num) + '.pkl'
     base_python_output = 'submissions/' + base_name + '_gen' + \
         ('%03d' % gen_num) + '.py'
-    base_sub_output = 'submissions/' + base_submission + '_gen' + \ 
+    base_sub_output = 'submissions/' + base_submission + '_gen' + \
         ('%03d' % gen_num)
     cmd1 = 'mv ' + sub_script_name + ' ' + sub_output + ' --backup=numbered'
     cmd2 = 'md ' + base_pickle + ' ' + base_pickle_output + \
@@ -537,7 +537,10 @@ class AdaptiveSampling(base):
             _pickle_submit(
                 self.msm_dir, self.cluster_obj, self.sub_obj,
                 self.q_check_obj, gen_num, 'clusterer')
-            self.cluster_obj.check_clustering(self.msm_dir, gen_num, self.n_kids)
+            correct_clust =  self.cluster_obj.check_clustering(
+                self.msm_dir, gen_num, self.n_kids)
+            if not correct_clust:
+                raise
             t_post = time.time()
             logging.info("clustering took " + str(t_post - t_pre) + " seconds")
         else:
@@ -547,24 +550,33 @@ class AdaptiveSampling(base):
                     " exist!")
             gen_num = _determine_gen(self.output_dir)
             logging.info('continuing adaptive sampling from run %d' % gen_num)
-            # try to move and cluster
+            # try to move trajectories
             try:
                 # move trajectories
                 _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 logging.info('moving trajectories')
+            except:
+                pass
+            # check clustering
+            correct_clust =  self.cluster_obj.check_clustering(
+                self.msm_dir, gen_num, self.n_kids)
+            # if wrong, resubmit
+            if not correct_clust:
                 # submit clustering job
                 logging.info('clustering simulation data')
                 t_pre = time.time()
+                # built in rebuild everything if restarting sims
                 self.cluster_obj.build_full = True
                 _pickle_submit(
                     self.msm_dir, self.cluster_obj, self.sub_obj,
                     self.q_check_obj, gen_num, 'clusterer')
-                self.cluster_obj.check_clustering(self.msm_dir, gen_num, self.n_kids)
+                correct_clust =  self.cluster_obj.check_clustering(
+                    self.msm_dir, gen_num, self.n_kids)
+                # if still wrong, raise error
+                if not correct_clust:
+                    raise
                 t_post = time.time()
                 logging.info("clustering took " + str(t_post - t_pre) + " seconds")
-            except:
-                pass
-
         # determine if updating data
         if int(gen_num % self.update_freq) == 0:
             update_data = True
@@ -627,7 +639,10 @@ class AdaptiveSampling(base):
             _pickle_submit(
                 self.msm_dir, self.cluster_obj, self.sub_obj,
                 self.q_check_obj, gen_num, 'clusterer')
-            self.cluster_obj.check_clustering(self.msm_dir, gen_num, self.n_kids)
+            correct_clust =  self.cluster_obj.check_clustering(
+                self.msm_dir, gen_num, self.n_kids)
+            if not correct_clust:
+                raise
             t_post = time.time()
             logging.info("clustering took " + str(t_post - t_pre) + " seconds")
             # analysis

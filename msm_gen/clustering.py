@@ -138,7 +138,7 @@ def save_states(
     pool = Pool(processes=n_procs)
     pool.map(_save_states, partitioned_centers_info)
     pool.terminate()
-    gc.collect()
+#    gc.collect()
     t1 = time.time()
     logging.debug("    Finished in "+str(t1-t0)+" sec")
     return
@@ -185,18 +185,23 @@ class ClusterWrap(base):
         self.n_procs = n_procs
         self.build_full = build_full
 
-    def check_clustering(self, msm_dir, gen_num, n_kids):
+    def check_clustering(self, msm_dir, gen_num, n_kids, verbose=True):
+        correct_clustering = True
         total_assignments = (gen_num + 1) * n_kids
         assignments = ra.load(msm_dir + '/data/assignments.h5')
         n_assignments = len(assignments) 
         if total_assignments != n_assignments:
-            raise
+            correct_clustering = False
+            logging.info(
+                "inconsistent number of trajectories between assignments and data!")
         unique_states = np.unique(assignments)
         n_states = len(unique_states)
         saved_states = glob.glob(msm_dir + '/centers_masses/*-00.pdb')
         if n_states != len(saved_states):
-            raise
-        return
+            correct_clustering = False
+            logging.info(
+                "number of states saved does not match those found in assignments!")
+        return correct_clustering
 
     @property
     def class_name(self):
