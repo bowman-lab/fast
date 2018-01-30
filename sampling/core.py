@@ -233,7 +233,7 @@ def _pickle_submit(
     sub_script_name = q_check_obj.get_submission_names(pid)[0]
     sub_output = 'submissions/' + base_name + '_gen' + \
         ('%03d' % gen_num) + '.out'
-    base_pickle_output = 'submissions/' + base_pickle + '_gen' + \
+    base_pickle_output = 'submissions/' + base_name + '_gen' + \
         ('%03d' % gen_num) + '.pkl'
     base_python_output = 'submissions/' + base_name + '_gen' + \
         ('%03d' % gen_num) + '.py'
