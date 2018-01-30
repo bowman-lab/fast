@@ -3,6 +3,7 @@ from .analysis.contacts import ContactsWrap
 from .analysis.minimize import MinimizeWrap
 from .analysis.rmsd import RMSDWrap
 from .analysis.pockets import PocketWrap
+from .analysis.distances import DistWrap
 
 # simulations wrapper
 from .md_gen.gromax import Gromax, GromaxProcessing
