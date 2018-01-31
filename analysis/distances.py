@@ -46,11 +46,13 @@ class DistWrap(base_analysis):
         self.atom_pairs = atom_pairs
         if type(self.atom_pairs) is str:
             self.atom_pairs = np.loadtxt(self.atom_pairs, dtype=int)
+            if len(self.atom_pairs.shape) == 1:
+                self.atom_pairs = [self.atom_pairs]
         self.p_norm = p_norm
-        self.set_points = set_points
+        self.set_points = np.array(set_points)
         # check set points
         if self.set_points is not None:
-            if len(set_points) != len(atom_pairs):
+            if len(self.set_points) != len(self.atom_pairs):
                 raise # number of set points does not match atom-pairs!!
 
     @property
