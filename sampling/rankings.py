@@ -10,7 +10,7 @@
 #######################################################################
 
 import enspara.tpt
-#import msmbuilder.tpt
+import msmbuilder.tpt
 import numpy as np
 import time
 import scipy.sparse as spar
@@ -125,7 +125,10 @@ def _select_states_spreading(
                 [
                     np.where(unique_states == state)[0]
                     for state in states_to_simulate])
-            new_rankings[states_to_zero] = 0
+            if select_max:
+                new_rankings[states_to_zero] = 0
+            else:
+                new_rankings[states_to_zero] = np.inf
         # pick next state
         states_to_simulate.append(
             _unbias_state_selection(
@@ -384,7 +387,8 @@ class counts(base_ranking):
     """Min-counts ranking object. Ranks states based on their raw
     counts."""
 
-    def __init__(self, maximize_ranking=False, **kwargs):
+    def __init__(self, maximize_ranking=False, scaling=None, **kwargs):
+        self.scaling = scaling
         base_ranking.__init__(
             self, maximize_ranking=maximize_ranking, **kwargs)
 
@@ -402,7 +406,10 @@ class counts(base_ranking):
         counts_per_state = np.array(msm.tcounts_.sum(axis=1)).flatten()
         if unique_states is None:
             unique_states = np.where(counts_per_state > 0)[0]
-        return counts_per_state[unique_states]
+        counts_return = counts_per_state[unique_states]
+        if self.scaling is not None:
+            counts_return = self.scaling.scale(counts_return)
+        return counts_return
 
 
 class FAST(base_ranking):
@@ -555,7 +562,7 @@ class string(base_ranking):
                 np.where(unique_states == path_state)[0][0]
                 for path_state in path])
         non_path_iis = np.setdiff1d(range(len(unique_states)), path_iis)
-        new_rankings = np.copy(statistical_ranking)
-        new_rankings[non_path_iis] = None
+        new_rankings = np.array(np.copy(statistical_ranking), dtype=float)
+        new_rankings[non_path_iis] = np.nan
         return new_rankings
 
