@@ -24,9 +24,13 @@ from ..base import base
 class GromaxProcessing(base):
     """Generates gromacs commands for aligning a trajectory and
     determining output coordinates."""
-    def __init__(self, align_group=None, output_group=None):
+    def __init__(
+            self, align_group=None, output_group=None, pbc='mol',
+            ur='compact'):
         self.align_group = str(align_group)
         self.output_group = str(output_group)
+        self.pbc = pbc
+        self.ur = ur
 
     @property
     def class_name(self):
@@ -37,6 +41,8 @@ class GromaxProcessing(base):
         return {
             'align_group': self.align_group,
             'output_group': self.output_group
+            'pbc': self.pbc
+            'ur': self.ur
         }
 
     def run(self):
@@ -46,10 +52,10 @@ class GromaxProcessing(base):
             trjconv_cmd = \
                 "echo '" + self.align_group + " 0' | gmx trjconv " + \
                 "-f frame0.xtc -o frame0_aligned.xtc -s md.tpr -center " + \
-                "-pbc mol -ur compact\n" + \
+                "-pbc "+pbc+" -ur "+ur+"\n" + \
                 "echo '" + self.align_group + " " + self.output_group + \
                 "' | gmx trjconv -f frame0.xtc -o frame0_masses.xtc" + \
-                " -s md.tpr -center -pbc mol -ur compact\n"
+                " -s md.tpr -center -pbc "+pbc+" -ur "+ur+"\n"
         return trjconv_cmd
 
 
