@@ -137,7 +137,7 @@ def _prop_sims(base_dir, trj_obj, gen_num, q_check_obj, new_states):
         cmd = 'mkdir ' + kid_dir
         _ = tools.run_commands(cmd)
         # run simulation and gather pid
-        filename = base_dir + '/msm/centers_restarts/State' + \
+        filename = base_dir + '/msm/centers_restarts/state' + \
             ('%06d' % new_states[kid]) + '-00.gro'
         pid = trj_obj.run(filename, kid_dir)
         pids.append(pid)
@@ -494,8 +494,8 @@ class AdaptiveSampling(base):
             "\nupdating clustering and analysis every:\n    " + \
             str(self.update_freq) + " gens")
         print("\nsimulation object:\n" + push_forward(str(self.sim_obj), 4))
-        print(
-            "\nclustering object:\n" + push_forward(str(self.cluster_obj), 4))
+#        print(
+#            "\nclustering object:\n" + push_forward(str(self.cluster_obj), 4))
         print("\nanalysis object:\n" + push_forward(str(self.analysis_obj), 4))
 #        print("\nMSM object:\n" + push_forward(str(self.msm_obj), 4))
         print("\nranking object:\n" + push_forward(str(self.ranking_obj), 4))
@@ -557,9 +557,12 @@ class AdaptiveSampling(base):
                 logging.info('moving trajectories')
             except:
                 pass
-            # check clustering
-            correct_clust =  self.cluster_obj.check_clustering(
-                self.msm_dir, gen_num, self.n_kids)
+            if os.path.exists(self.msm_dir+"/data/assignments.h5"):
+                # check clustering
+                correct_clust =  self.cluster_obj.check_clustering(
+                    self.msm_dir, gen_num, self.n_kids)
+            else:
+                correct_clust = False
             # if wrong, resubmit
             if not correct_clust:
                 # submit clustering job
