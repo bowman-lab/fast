@@ -40,8 +40,8 @@ class GromaxProcessing(base):
     def config(self):
         return {
             'align_group': self.align_group,
-            'output_group': self.output_group
-            'pbc': self.pbc
+            'output_group': self.output_group,
+            'pbc': self.pbc,
             'ur': self.ur
         }
 
