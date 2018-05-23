@@ -27,7 +27,7 @@ from multiprocessing import Pool
 
 def _get_filenames(msm_dir):
     """Returns pdb filenames"""
-    pdb_filenames = glob.glob(msm_dir + "/centers_masses/State*.pdb")
+    pdb_filenames = glob.glob(msm_dir + "/centers_masses/state*.pdb")
     pdb_filenames_full = np.array(
         [os.path.abspath(filename) for filename in np.sort(pdb_filenames)])
     return pdb_filenames_full
