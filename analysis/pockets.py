@@ -190,7 +190,7 @@ class PocketWrap(base_analysis):
             # determine pockets of all non-processed states
             else:
                 n_processed_states = len(
-                    glob.glob(self.output_folder + "/State*"))
+                    glob.glob(self.output_folder + "/state*"))
                 save_pocket_elements(
                     self.pocket_func, centers[n_processed_states:],
                     pdb_filenames[n_processed_states:], self.output_folder,
