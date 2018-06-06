@@ -253,7 +253,7 @@ def _pickle_submit(
     return
 
 
-def _determine_gen(output_dir):
+def _determine_gen(output_dir, ignore_error=False):
     """Determines the current generation number."""
     # determine number of gen folders
     n_gen_folders = len(glob.glob(output_dir+'/gen*'))
@@ -264,13 +264,13 @@ def _determine_gen(output_dir):
         [int(n.split("gen")[-1].split("_")[0]) for n in trj_names])
     # error check that completed sims match number of gen folders
     n_trj_gens = len(np.unique(trj_gen_nums))
-#    if n_gen_folders != n_trj_gens:
-#        print(
-#            "number of gens is not consistent with trajectories. " + \
-#            "Maybe simulations crashed?")
-#        raise
+    if (n_gen_folders != n_trj_gens) and not ignore_error:
+        print(
+            "number of gens is not consistent with trajectories. " + \
+            "Maybe simulations crashed?")
+        raise
     # subtract 1 for 0 based counting
-    gen_num = int(n_trj_gens - 1)
+    gen_num = int(np.max([n_trj_gens, n_gen_folders]) - 1)
     return gen_num
 
 
@@ -548,8 +548,10 @@ class AdaptiveSampling(base):
                 raise DataInvalid(
                     "Can't continue run from output directory that doesn't" + \
                     " exist!")
-            gen_num = _determine_gen(self.output_dir)
+            gen_num = _determine_gen(self.output_dir, ignore_error=True)
             logging.info('continuing adaptive sampling from run %d' % gen_num)
+            gen_num2 = _determine_gen(self.output_dir)
+            assert gen_num == gen_num2
             # try to move trajectories
             try:
                 # move trajectories
