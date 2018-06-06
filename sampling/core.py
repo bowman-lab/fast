@@ -264,11 +264,11 @@ def _determine_gen(output_dir):
         [int(n.split("gen")[-1].split("_")[0]) for n in trj_names])
     # error check that completed sims match number of gen folders
     n_trj_gens = len(np.unique(trj_gen_nums))
-    if n_gen_folders != n_trj_gens:
-        print(
-            "number of gens is not consistent with trajectories. " + \
-            "Maybe simulations crashed?")
-        raise
+#    if n_gen_folders != n_trj_gens:
+#        print(
+#            "number of gens is not consistent with trajectories. " + \
+#            "Maybe simulations crashed?")
+#        raise
     # subtract 1 for 0 based counting
     gen_num = int(n_trj_gens - 1)
     return gen_num
