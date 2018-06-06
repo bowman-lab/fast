@@ -549,6 +549,7 @@ class AdaptiveSampling(base):
                     "Can't continue run from output directory that doesn't" + \
                     " exist!")
             gen_num = _determine_gen(self.output_dir, ignore_error=True)
+            gen_dir = self.output_dir + '/gen' + str(gen_num)
             logging.info('continuing adaptive sampling from run %d' % gen_num)
             # try to move trajectories
             try:
@@ -557,8 +558,8 @@ class AdaptiveSampling(base):
                 logging.info('moving trajectories')
             except:
                 pass
-            gen_num2 = _determine_gen(self.output_dir)
-            assert gen_num == gen_num2
+            gen_num_test = _determine_gen(self.output_dir)
+            assert gen_num == gen_num_test
             if os.path.exists(self.msm_dir+"/data/assignments.h5"):
                 # check clustering
                 correct_clust =  self.cluster_obj.check_clustering(
@@ -628,6 +629,9 @@ class AdaptiveSampling(base):
             # move trajectories
             logging.info('moving trajectories')
             _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
+            # ensure proper trajectories
+            gen_num_test = _determine_gen(self.output_dir)
+            assert gen_num == gen_num_test
             # determine if updating data
             if int(gen_num % self.update_freq) == 0:
                 logging.info('updating all cluster centers')
