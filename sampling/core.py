@@ -550,8 +550,6 @@ class AdaptiveSampling(base):
                     " exist!")
             gen_num = _determine_gen(self.output_dir, ignore_error=True)
             logging.info('continuing adaptive sampling from run %d' % gen_num)
-            gen_num2 = _determine_gen(self.output_dir)
-            assert gen_num == gen_num2
             # try to move trajectories
             try:
                 # move trajectories
@@ -559,6 +557,8 @@ class AdaptiveSampling(base):
                 logging.info('moving trajectories')
             except:
                 pass
+            gen_num2 = _determine_gen(self.output_dir)
+            assert gen_num == gen_num2
             if os.path.exists(self.msm_dir+"/data/assignments.h5"):
                 # check clustering
                 correct_clust =  self.cluster_obj.check_clustering(
