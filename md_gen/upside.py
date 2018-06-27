@@ -113,7 +113,7 @@ class Upside(base):
         if type(struct) is md.Trajectory:
             struct.save_pdb(self.output_dir + '/start.pdb')
             self.start_name = self.output_dir + '/start.pdb'
-        elif struct is None:
+        elif (struct is None) or (struct == 'None'):
             self.start_name = None
         else:
             self.start_name = os.path.abspath(struct)
