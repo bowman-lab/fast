@@ -108,6 +108,8 @@ class SPSub(base):
         # optionally wait for job to finish
         if self.wait:
             out,err = p.communicate()
+            print(out.decode('utf-8'))
+            print(err.decode('utf-8'))
             job_sub = None
         else:
             job_sub = p.pid
