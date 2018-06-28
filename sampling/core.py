@@ -570,6 +570,10 @@ class AdaptiveSampling(base):
             if not correct_clust:
                 # submit clustering job
                 logging.info('clustering simulation data')
+                logging.info('updating all cluster centers')
+                rebuild_num = int(gen_num / self.update_freq) - 1 
+                _move_cluster_data(
+                    self.msm_dir, rebuild_num, self.analysis_obj)
                 t_pre = time.time()
                 # built in rebuild everything if restarting sims
                 self.cluster_obj.build_full = True
