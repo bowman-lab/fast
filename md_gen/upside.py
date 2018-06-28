@@ -42,7 +42,7 @@ class UpsideProcessing(base):
             " --output_file " + output_file
         if self.align:
             process_cmd += " --align"
-        return process_cmd
+        return process_cmd + "\n"
 
 
 class Upside(base):
@@ -70,7 +70,7 @@ class Upside(base):
             self, fasta_file, output_name="simulation.up",
             output_basename='upside_sim', upside_dir=None, processing_obj=None,
             submission_obj=None, duration='1e7', frame_interval='1e2', temperature=0.5):
-        self.fasta_file = fasta_file
+        self.fasta_file = os.path.abspath(fasta_file)
         self.output_name = output_name
         self.output_basename = output_basename
         if upside_dir is None:
@@ -140,15 +140,15 @@ class Upside(base):
             " --frame-interval " + self.frame_interval + \
             " --temperature " + self.temperature + \
             " --seed $RANDOM " + \
-            self.output_name
+            self.output_name + "\n"
         if self.start_name is not None:
             pdb_process_cmd = self.upside_py_dir + \
                 "/PDB_to_initial_structure.py " + self.start_name + " " + \
-                self.output_basename
-            upside_config_cmd += " --initial-structure " + self.output_basename + ".initial.pkl"
+                self.output_basename + "\n"
+            upside_config_cmd += " --initial-structure " + self.output_basename + ".initial.pkl\n"
             cmds = [pdb_process_cmd, upside_config_cmd, run_cmd]
         else:
-            cmds = [upside_config_cmd, run_cmd]
+            cmds = [upside_config_cmd+"\n", run_cmd]
         # combine commands and submit to submission object
         try:
             cmds.append(self.processing_obj.run(self.output_name, "frame0_aligned.xtc"))

@@ -521,7 +521,12 @@ class AdaptiveSampling(base):
             gen_num = 0
             gen_dir = self.output_dir + '/gen' + str(gen_num)
             _setup_directories(self.output_dir)
-            self.initial_state_md.save_gro(msm_dir + '/restart.gro')
+            try:
+                self.initial_state_md.save_gro(msm_dir + '/restart.gro')
+            except:
+                logging.warning(
+                    "Could not save initial state. Initial state is not pdb or gro?")
+                self.cluster_obj.base_struct.save_gro(msm_dir + '/restart.gro')
             # initialize first run
             logging.info('starting initial simulations')
             _gen_initial_sims(
