@@ -526,7 +526,7 @@ class AdaptiveSampling(base):
             except:
                 logging.warning(
                     "Could not save initial state. Initial state is not pdb or gro?")
-                self.cluster_obj.base_struct.save_gro(msm_dir + '/restart.gro')
+                self.cluster_obj.base_struct_md.save_gro(msm_dir + '/restart.gro')
             # initialize first run
             logging.info('starting initial simulations')
             _gen_initial_sims(
