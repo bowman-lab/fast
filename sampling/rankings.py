@@ -467,7 +467,7 @@ class FAST(base_ranking):
             'statistical_scaling': self.statistical_scaling,
             'alpha': self.alpha,
             'alpha_percent': self.alpha_percent,
-            'maximizeE_ranking': self.maximize_ranking
+            'maximize_ranking': self.maximize_ranking
         }
 
     def rank(self, msm, unique_states=None):

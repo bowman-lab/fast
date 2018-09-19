@@ -22,7 +22,7 @@ from .. import tools
 #######################################################################
 
 
-def best_hummer_q(traj, native, verbose=True):
+def best_hummer_q(traj, native, verbose=True, native_cutoff=0.45):
     """Compute the fraction of native contacts according the definition from
     Best, Hummer and Eaton [1]
     
@@ -47,7 +47,8 @@ def best_hummer_q(traj, native, verbose=True):
 
     BETA_CONST = 50  # 1/nm
     LAMBDA_CONST = 1.8
-    NATIVE_CUTOFF = 0.45  # nanometers
+#    NATIVE_CUTOFF = 0.45  # nanometers
+    NATIVE_CUTOFF = native_cutoff  # nanometers
 
     # get the indices of all of the heavy atoms
     heavy = native.topology.select_atom_indices('heavy')

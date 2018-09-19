@@ -33,8 +33,11 @@ class feature_scale(base):
 
     def scale(self, values):
         value_spread = values.max() - values.min()
-        if self.maximize:
-            scaled_values = (values - values.min()) / value_spread
+        if value_spread == 0.0:
+            scaled_values = np.zeros(values.shape)
         else:
-            scaled_values = (values.max() - values) / value_spread
+            if self.maximize:
+                scaled_values = (values - values.min()) / value_spread
+            else:
+                scaled_values = (values.max() - values) / value_spread
         return scaled_values

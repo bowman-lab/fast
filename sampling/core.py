@@ -415,7 +415,6 @@ class AdaptiveSampling(base):
             output_dir='adaptive_sampling', verbose=True):
         # Initialize class variables
         self.sim_obj = sim_obj
-        self.analysis_obj = analysis_obj
         self.initial_state = initial_state
         if type(self.initial_state) is str:
             self.initial_state_md = md.load(self.initial_state)
