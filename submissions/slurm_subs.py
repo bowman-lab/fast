@@ -13,6 +13,7 @@ import numpy as np
 import os
 import subprocess as sp
 import time
+from enspara.util import array as ra
 from .. import tools
 from ..base import base
 
@@ -63,7 +64,7 @@ def get_running_jobs():
     try:
         squeue_output = tools.run_commands('squeue')[0]
         job_listing_information = squeue_output.split("\n")[:-1]
-        running_jobs = np.array(
+        running_jobs = ra.RaggedArray(
             [
                 s.split() for s in 
                 job_listing_information])[:,0]
