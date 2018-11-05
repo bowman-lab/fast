@@ -40,7 +40,7 @@ class UpsideEnergyWrap(base_analysis):
     def __init__(
             self, sim_filename):
         # determine base_struct
-        self.sim_filename = sim_filename
+        self.sim_filename = os.path.abspath(sim_filename)
 
     @property
     def class_name(self):
@@ -67,7 +67,7 @@ class UpsideEnergyWrap(base_analysis):
         else:
             # load centers
             centers = md.load(
-                "./data/full_centers.xtc", top="./centers.pdb")
+                "./data/full_centers.xtc", top="./prot_masses.pdb")
             pos = mu.extract_bb_pos_angstroms(centers)
             engine = ue.Upside(self.sim_filename)
             # calculate and save energies

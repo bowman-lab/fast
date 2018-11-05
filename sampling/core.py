@@ -575,8 +575,17 @@ class AdaptiveSampling(base):
                 # submit clustering job
                 logging.info('clustering simulation data')
                 logging.info('updating all cluster centers')
-                rebuild_num = int(gen_num / self.update_freq) - 1 
-                _move_cluster_data(
+                rebuild_num = int(gen_num / self.update_freq) - 1
+                # if restarting from first gen, might not need to move
+                # cluster data
+                if gen_num == 0:
+                    try:
+                        _move_cluster_data(
+                        self.msm_dir, rebuild_num, self.analysis_obj)
+                    except:
+                        pass
+                else:
+                    _move_cluster_data(
                     self.msm_dir, rebuild_num, self.analysis_obj)
                 t_pre = time.time()
                 # built in rebuild everything if restarting sims
