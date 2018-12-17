@@ -232,7 +232,8 @@ class ClusterWrap(base):
         # save data
         ra.save("./data/assignments.h5", assignments)
         ra.save("./data/distances.h5", distances)
-        centers.save_xtc("./data/centers.xtc")
+        trjs_sub[self.base_clust_obj.center_indices_].save_xtc(
+            "./data/centers.xtc")
         full_centers = trjs[self.base_clust_obj.center_indices_]
         full_centers.save_xtc("./data/full_centers.xtc")
         # save states
