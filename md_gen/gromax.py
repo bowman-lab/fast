@@ -26,11 +26,12 @@ class GromaxProcessing(base):
     determining output coordinates."""
     def __init__(
             self, align_group=None, output_group=None, pbc='mol',
-            ur='compact'):
+            ur='compact', index_file=None):
         self.align_group = str(align_group)
         self.output_group = str(output_group)
         self.pbc = pbc
         self.ur = ur
+        self.index_file = os.path.abspath(index_file)
 
     @property
     def class_name(self):
@@ -49,13 +50,18 @@ class GromaxProcessing(base):
         if self.align_group is None:
             trjconv_cmd = ""
         else:
-            trjconv_cmd = \
+            trjconv_alignment = \
                 "echo '" + self.align_group + " 0' | gmx trjconv " + \
                 "-f frame0.xtc -o frame0_aligned.xtc -s md.tpr -center " + \
-                "-pbc "+self.pbc+" -ur "+self.ur+"\n" + \
+                "-pbc "+self.pbc+" -ur "+self.ur
+            trjconv_output_groups = \
                 "echo '" + self.align_group + " " + self.output_group + \
                 "' | gmx trjconv -f frame0.xtc -o frame0_masses.xtc" + \
-                " -s md.tpr -center -pbc "+self.pbc+" -ur "+self.ur+"\n"
+                " -s md.tpr -center -pbc "+self.pbc+" -ur "+self.ur
+            if self.index_file is not None:
+                trjconv_alignment += " -n " + self.index_file
+                trjconv_output_groups += " -n " + self.index_file
+            trjconv_cmd = trjconv_alignment + "\n" + trjconv_output_groups + "\n"
         return trjconv_cmd
 
 
@@ -178,7 +184,7 @@ class Gromax(base):
         if self.itp_files is not None:
             cmds = []
             for filename in self.itp_files:
-                cmds.append('cp ' + filename + ' ' + self.output_dir)
+                cmds.append('cp ' + filename + ' ' + self.output_dir + ' -r')
             tools.run_commands(cmds)
         return
 

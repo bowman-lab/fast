@@ -10,7 +10,7 @@
 #######################################################################
 
 import enspara.tpt
-import msmbuilder.tpt
+#import msmbuilder.tpt
 import numpy as np
 import time
 import scipy.sparse as spar
@@ -229,7 +229,7 @@ def rank_aij(aij, d=0.85, Pi=None, max_iters=100000, norm=True):
         Pi = np.zeros(int(N))
         Pi[:] = 1/N
     # set error for page ranks
-    error = 1 / N**5
+    error = 1 / N**2
     # first pass of rankings
     new_page_rank = (1 - d) * Pi + d * aij.dot(Pi)
     pr_error = np.sum(np.abs(Pi - new_page_rank))
