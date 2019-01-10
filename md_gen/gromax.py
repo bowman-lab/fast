@@ -31,7 +31,10 @@ class GromaxProcessing(base):
         self.output_group = str(output_group)
         self.pbc = pbc
         self.ur = ur
-        self.index_file = os.path.abspath(index_file)
+        if index_file is None:
+            self.index_file = index_file
+        else:
+            self.index_file = os.path.abspath(index_file)
 
     @property
     def class_name(self):

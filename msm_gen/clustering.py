@@ -170,7 +170,18 @@ class ClusterWrap(base):
         # determine atom indices
         self.atom_indices = atom_indices
         if type(atom_indices) is str:
-            self.atom_indices_vals = np.loadtxt(atom_indices, dtype=int)
+            try:
+                self.atom_indices_vals = np.loadtxt(atom_indices, dtype=int)
+            except ValueError:
+                print("\n")
+                logging.warning(
+                    ' Atom indices for clustering are not integers!'
+                    ' Attempting to convert to integers\n')
+                non_int_vals = np.loadtxt(atom_indices)
+                self.atom_indices = np.array(non_int_vals, dtype=int)
+                # ensure no conversion error
+                diffs = self.atom_indices - non_int_vals
+                assert np.all(diffs == np.zeros(non_int_vals.shape[0]))
         else:
             self.atom_indices_vals = atom_indices
         self.n_procs = n_procs
