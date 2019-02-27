@@ -105,9 +105,8 @@ class PocketWrap(base_analysis):
         pocket volume.
     grid_spacing : float, default = 0.1,
         The spacing for grid around the protein.
-    distance_cutoff : float, default = 0.24,
-        The distance cutoff for specifying that a grid points touches
-        the touches protein.
+    probe_radius : float, default = 0.07,
+        The radius of the grid point to probe for pocket elements.
     min_rank : int, default = 4,
         Minimum rank for defining a pocket element. Ranges from 1-7, 1
         being very shallow and 7 being a fully enclosed pocket element.
@@ -119,6 +118,9 @@ class PocketWrap(base_analysis):
     build_full : bool,
         Flag to either analyze all structures or to continue previous
         analysis.
+    atom_indices : array-like, or string, default=None,
+        The atom indices to use for calculating pocket volumes. Can be
+        supplied as a path to a numpy file or a list of indices.
 
     Attributes
     ----------
@@ -130,19 +132,25 @@ class PocketWrap(base_analysis):
         The filename of the final rankings.
     """
     def __init__(
-            self, pocket_to_report=0, grid_spacing=0.1, distance_cutoff=0.24,
+            self, pocket_to_report=0, grid_spacing=0.1, probe_radius=0.07,
             min_rank=4, min_cluster_size=0, n_cpus=1, build_full=True,
-            **kwargs):
+            atom_indices=None, **kwargs):
         self.pocket_to_report = pocket_to_report
         self.grid_spacing = grid_spacing
-        self.distance_cutoff = distance_cutoff
+        self.probe_radius = probe_radius
         self.min_rank = min_rank
         self.min_cluster_size = min_cluster_size
         self.n_cpus = n_cpus
         self.build_full = build_full
+        self.atom_indices = atom_indices
+        if isinstance(self.atom_indices, (str)):
+            try:
+                self.atom_indices = np.loadtxt(self.atom_indices, dtype=int)
+            except:
+                self.atom_indices = np.load(self.atom_indices, dtype=int)
         self.pocket_func = partial(
             pockets.get_pockets, grid_spacing=grid_spacing,
-            distance_cutoff=distance_cutoff, min_rank=min_rank,
+            probe_radius=probe_radius, min_rank=min_rank,
             min_cluster_size=min_cluster_size, n_procs=n_cpus)
 
     @property
@@ -154,11 +162,12 @@ class PocketWrap(base_analysis):
         return {
             'pocket_to_report': self.pocket_to_report,
             'grid_spacing': self.grid_spacing,
-            'distance_cutoff': self.distance_cutoff,
+            'probe_radius': self.probe_radius,
             'min_rank': self.min_rank,
             'min_cluster_size': self.min_cluster_size,
             'n_cpus': self.n_cpus,
-            'build_full': self.build_full
+            'build_full': self.build_full,
+            'atom_indices': self.atom_indices
         }   
 
     @property
@@ -180,6 +189,8 @@ class PocketWrap(base_analysis):
             centers = md.load(
                 self.msm_dir + "/data/full_centers.xtc",
                 top=self.msm_dir + "/prot_masses.pdb")
+            if self.atom_indices is not None:
+                centers = centers.atom_slice(self.atom_indices)
             # optionally determine pockets of all structures
             if self.build_full:
                 cmd = ['mkdir ' + self.output_folder]
