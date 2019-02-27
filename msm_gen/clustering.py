@@ -44,23 +44,26 @@ def load_trjs(n_procs=1, **kwargs):
 def _save_states(centers_info):
     """Save centers found within a single trajectory"""
     # get state, conf, and frame info. Also the filename and topology.
-    state = centers_info['state']
-    conf = centers_info['conf']
-    frame = centers_info['frame']
-    trj_filename = centers_info['trj_filename']
-    topology = centers_info['topology']
+    states = centers_info['state']
+    confs = centers_info['conf']
+    frames = centers_info['frame']
+    trj_filename = centers_info['trj_filename'][0]
+    topology = centers_info['topology'][0]
     # load structs trajectories
-    center = md.load('./trajectories/' + trj_filename, top=topology, frame=frame)
-    center_full = md.load(
-        './trajectories_full/' + trj_filename, top="restart.gro", frame=frame)
-    # save center after processing
-    pdb_filename = "./centers_masses/state" + ('%06d' % state) + \
-        '-' + ('%02d' % conf) + ".pdb"
-    center.save_pdb(pdb_filename)
-    # save center for restarting simulations
-    pdb_filename = "./centers_restarts/state" + ('%06d' % state) + \
-        '-' + ('%02d' % conf) + ".gro"
-    center_full.save_gro(pdb_filename)
+    trj = md.load('./trajectories/' + trj_filename, top=topology)
+    trj_full = md.load(
+        './trajectories_full/' + trj_filename, top="restart.gro")
+    for num in range(len(states)):
+        # save center after processing
+        pdb_filename = "./centers_masses/state" + ('%06d' % states[num]) + \
+            '-' + ('%02d' % confs[num]) + ".pdb"
+        center = trj[frames[num]]
+        center.save_pdb(pdb_filename)
+        # save center for restarting simulations
+        pdb_filename = "./centers_restarts/state" + ('%06d' % states[num]) + \
+            '-' + ('%02d' % confs[num]) + ".gro"
+        center = trj_full[frames[num]]
+        center.save_gro(pdb_filename)
     return
 
 
@@ -125,9 +128,14 @@ def save_states(
                 ('state', 'int'), ('conf', 'int'), ('trj_num', 'int'),
                 ('frame', 'int'), ('trj_filename', np.str_, 500),
                 ('topology', np.str_, 500)])
+    unique_trjs = np.unique(centers_location['trj_num'])
+    partitioned_centers_info = []
+    for trj in unique_trjs:
+        partitioned_centers_info.append(
+            centers_location[np.where(centers_location['trj_num'] == trj)])
     logging.info("  Saving states!")
     pool = Pool(processes=n_procs)
-    pool.map(_save_states, centers_location)
+    pool.map(_save_states, partitioned_centers_info)
     pool.terminate()
 #    gc.collect()
     t1 = time.time()
