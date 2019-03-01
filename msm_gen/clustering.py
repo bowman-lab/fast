@@ -134,9 +134,11 @@ def save_states(
         partitioned_centers_info.append(
             centers_location[np.where(centers_location['trj_num'] == trj)])
     logging.info("  Saving states!")
-    pool = Pool(processes=n_procs)
-    pool.map(_save_states, partitioned_centers_info)
-    pool.terminate()
+    for n in np.arange(len(partitioned_centers_info)):
+        _save_states(partitioned_centers_info[n])
+#    pool = Pool(processes=n_procs)
+#    pool.map(_save_states, partitioned_centers_info)
+#    pool.terminate()
 #    gc.collect()
     t1 = time.time()
     logging.info("    Finished in "+str(t1-t0)+" sec")
