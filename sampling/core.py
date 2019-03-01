@@ -508,30 +508,45 @@ class AdaptiveSampling(base):
         return
 
     def run(self):
+        # after setup, adaptive sampling proceeds with the following steps:
+        # 1) run simulation, process trajectories, and move them to the
+        #    msm directory
+        # 2) cluster the conformations and save assignments, distances,
+        #    and cluster centers
+        # 3) build the MSM and save transition matrix
+        # 4) optionally analyze the cluster centers and save the results
+        #    of the analysis
+        # 5) rank states for reselection based on structural analysis
+        #    (optional) and MSM statistics
+        # 6) restart simulations from top ranking states
         self.print_parameters()
         # set msmdir
         msm_dir = self.output_dir + '/msm'
         # timeit
         t0 = time.time()
         # initilize adaptive sampling if not continuing a previous run
-        # builds directories, generates first run of sampling, an clusters data
+        # builds directories, generates first run of sampling, and
+        # clusters data
         if not self.continue_prev:
+            # build initial directory structure
             logging.info('building directories')
             gen_num = 0
             gen_dir = self.output_dir + '/gen' + str(gen_num)
             _setup_directories(self.output_dir)
+            # save starting state in msm directory. Will be used to load
+            # and save trajectories for restarting simulations
             try:
                 self.initial_state_md.save_gro(msm_dir + '/restart.gro')
             except:
                 logging.warning(
                     "Could not save initial state. Initial state is not pdb or gro?")
                 self.cluster_obj.base_struct_md.save_gro(msm_dir + '/restart.gro')
-            # initialize first run
+            # initialize first run of sampling
             logging.info('starting initial simulations')
             _gen_initial_sims(
                 self.output_dir, self.initial_state_md, self.sim_obj,
                 self.n_kids, self.q_check_obj)
-            # move trajectories
+            # move trajectories after sampling
             logging.info('moving trajectories')
             _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
             # submit clustering job
