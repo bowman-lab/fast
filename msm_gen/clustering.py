@@ -103,13 +103,13 @@ class ClusterWrap(base):
             correct_clustering = False
             logging.info(
                 "inconsistent number of trajectories between assignments and data!")
-        unique_states = np.unique(assignments)
-        n_states = len(unique_states)
-        saved_states = glob.glob(msm_dir + '/centers_masses/*-00.pdb')
-        if n_states != len(saved_states):
-            correct_clustering = False
-            logging.info(
-                "number of states saved does not match those found in assignments!")
+#        unique_states = np.unique(assignments)
+#        n_states = len(unique_states)
+#        saved_states = glob.glob(msm_dir + '/centers_masses/*-00.pdb')
+#        if n_states != len(saved_states):
+#            correct_clustering = False
+#            logging.info(
+#                "number of states saved does not match those found in assignments!")
         return correct_clustering
 
     @property
@@ -160,7 +160,3 @@ class ClusterWrap(base):
         if init_centers is not None:
             unique_states = unique_states[-(n_states-len(init_centers)):]
         np.save("./data/unique_states.npy", unique_states)
-        save_states(
-            assignments, distances, state_nums=unique_states,
-            n_procs=self.n_procs,
-            largest_center=self.base_clust_obj.cluster_radius)

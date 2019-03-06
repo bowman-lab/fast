@@ -23,6 +23,7 @@ from . import rankings
 from .. import tools
 from ..base import base
 from ..exception import DataInvalid, MissingData
+from ..msm_gen import SaveWrap
 from ..submissions import slurm_subs
 from enspara.msm import builders, MSM
 from enspara.util import array as ra
@@ -308,8 +309,11 @@ def _move_cluster_data(msm_dir, rebuild_num, analysis_obj=None):
     # define old directory to move into. mkdir if first rebuild.
     old_dir = msm_dir + '/old'
     if rebuild_num == 0:
-        cmd = 'mkdir ' + old_dir
-        _ = tools.run_commands(cmd)
+        try:
+            cmd = 'mkdir ' + old_dir
+            _ = tools.run_commands(cmd)
+        except:
+            pass
     # move data and centers
     cmd1 = 'mv ' + msm_dir + '/data ' + old_dir + '/data' + str(rebuild_num)
     cmd2 = 'mv ' + msm_dir + '/centers_masses ' + old_dir + \
@@ -409,10 +413,10 @@ class AdaptiveSampling(base):
 
     def __init__(
             self, initial_state, n_gens=1, n_kids=1, sim_obj=None,
-            cluster_obj=None, msm_obj=None, analysis_obj=None,
-            ranking_obj=None, spreading_func=None, update_freq=np.inf,
-            continue_prev=False, sub_obj=None, q_check_obj=None,
-            output_dir='adaptive_sampling', verbose=True):
+            cluster_obj=None, save_state_obj=None, msm_obj=None,
+            analysis_obj=None, ranking_obj=None, spreading_func=None,
+            update_freq=np.inf, continue_prev=False, sub_obj=None,
+            q_check_obj=None, output_dir='adaptive_sampling', verbose=True):
         # Initialize class variables
         self.sim_obj = sim_obj
         self.initial_state = initial_state
@@ -423,6 +427,9 @@ class AdaptiveSampling(base):
         self.n_gens = n_gens
         self.n_kids = n_kids
         self.cluster_obj = cluster_obj
+        self.save_state_obj = save_state_obj
+        self.save_restart_obj = SaveWrap(
+            centers='restarts', save_routine='restarts')
         self.analysis_obj = analysis_obj
         # msm obj default is normalize without eq_probs
         if msm_obj is None:
@@ -495,6 +502,9 @@ class AdaptiveSampling(base):
         print("\nsimulation object:\n" + push_forward(str(self.sim_obj), 4))
         print(
             "\nclustering object:\n" + push_forward(str(self.cluster_obj), 4))
+        print(
+            "\nsave states object:\n" + \
+            push_forward(str(self.save_state_obj), 4))
         print("\nanalysis object:\n" + push_forward(str(self.analysis_obj), 4))
 #        print("\nMSM object:\n" + push_forward(str(self.msm_obj), 4))
         print("\nranking object:\n" + push_forward(str(self.ranking_obj), 4))
@@ -511,12 +521,12 @@ class AdaptiveSampling(base):
         # after setup, adaptive sampling proceeds with the following steps:
         # 1) simulate, process trajectories, and move them to the
         #    msm directory
-        # 2) cluster the conformations and save assignments, distances,
-        #    and cluster centers
-        # 3) analyze the cluster centers and save the results
+        # 2) cluster the conformations and save assignments and distances
+        # 3) optionally save cluster centers
+        # 4) analyze the cluster centers and save the results
         #    of the analysis
-        # 4) build the MSM and save transition matrix
-        # 5) rank states for reselection based on structural analysis
+        # 5) build the MSM and save transition matrix
+        # 6) rank states for reselection based on structural analysis
         #    (optional) and MSM statistics
         # 
         # If restarting an adaptive sampling run, attempts to move simulations
@@ -583,6 +593,25 @@ class AdaptiveSampling(base):
             # log clustering time
             t_post = time.time()
             logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
+
+            ###########################################################
+            #                 STEP 3 (saving states)                  #
+            ###########################################################
+
+            if self.save_state_obj is not None:
+                logging.info('saving states')
+                t_pre = time.time()
+                _pickle_submit(
+                    self.msm_dir, self.save_state_obj, self.sub_obj,
+                    self.q_check_obj, gen_num, 'save_states')
+                correct_save = self.save_state_obj.check_save_states(
+                    self.msm_dir)
+                if not correct_save:
+                    raise
+                t_post = time.time()
+                logging.info(
+                    'saving states took %0.4f seconds' % (t_post - t_pre))
+
 
         ###########################################################
         #               restarting adaptive sampling              #
@@ -655,6 +684,28 @@ class AdaptiveSampling(base):
                     raise
                 t_post = time.time()
                 logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
+
+            ###########################################################
+            #                 STEP 3 (saving states)                  #
+            ###########################################################
+
+            if self.save_state_obj is not None:
+                correct_save = self.save_state_obj.check_save_states(
+                    self.msm_dir)
+                if not correct_save: 
+                    logging.info('saving states')
+                    t_pre = time.time()
+                    _pickle_submit(
+                        self.msm_dir, self.save_state_obj, self.sub_obj,
+                        self.q_check_obj, gen_num, 'save_states')
+                    correct_save = self.save_state_obj.check_save_states(
+                        self.msm_dir)
+                    if not correct_save:
+                        raise
+                    t_post = time.time()
+                    logging.info(
+                        'saving states took %0.4f seconds' % (t_post - t_pre))
+
         # determine if updating data
         if int(gen_num % self.update_freq) == 0:
             update_data = True
@@ -662,7 +713,7 @@ class AdaptiveSampling(base):
             update_data = False
 
         ###########################################################
-        #               STEP 3 (analysis of centers)              #
+        #               STEP 4 (analysis of centers)              #
         ###########################################################
 
         # run analysis object routine
@@ -672,7 +723,7 @@ class AdaptiveSampling(base):
             self.q_check_obj, update_data)
 
         ###########################################################
-        #                  STEP 4 (MSM generation)                #
+        #                  STEP 5 (MSM generation)                #
         ###########################################################
 
         # build msm
@@ -681,7 +732,7 @@ class AdaptiveSampling(base):
             self.msm_dir, self.msm_obj)
 
         ###########################################################
-        #                   STEP 5 (rank states)                  #
+        #                   STEP 6 (rank states)                  #
         ###########################################################
 
         # if ranking  uses analysis from state centers, update
@@ -703,6 +754,10 @@ class AdaptiveSampling(base):
             self.msm_dir + '/rankings/states_to_simulate_gen' + \
                 str(gen_num) + '.npy', new_states)
 
+        if (self.save_state_obj.save_routine == 'masses') or \
+                (self.save_state_obj.centers == 'none'):
+            self.save_restart_obj.gen_num = gen_num
+            self.save_restart_obj.run(self.msm_dir)
 
         ################################################################
         #                 main adaptive sampling loop                  #
@@ -756,9 +811,29 @@ class AdaptiveSampling(base):
                 raise
             t_post = time.time()
             logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
+
+
+            ###########################################################
+            #                 STEP 3 (saving states)                  #
+            ###########################################################
+
+            if self.save_state_obj is not None:
+                logging.info('saving states')
+                t_pre = time.time()
+                _pickle_submit(
+                    self.msm_dir, self.save_state_obj, self.sub_obj,
+                    self.q_check_obj, gen_num, 'save_states')
+                correct_save = self.save_state_obj.check_save_states(
+                    self.msm_dir)
+                if not correct_save:
+                    raise
+                t_post = time.time()
+                logging.info(
+                    'saving states took %0.4f seconds' % (t_post - t_pre))
+
             
             ###########################################################
-            #               STEP 3 (analysis of centers)              #
+            #               STEP 4 (analysis of centers)              #
             ###########################################################
 
             # analysis
@@ -768,7 +843,7 @@ class AdaptiveSampling(base):
                 self.q_check_obj, update_data)
 
             ###########################################################
-            #                  STEP 4 (MSM generation)                #
+            #                  STEP 5 (MSM generation)                #
             ###########################################################
 
             # build msm
@@ -777,11 +852,10 @@ class AdaptiveSampling(base):
                 self.msm_dir, self.msm_obj)
 
             ###########################################################
-            #                   STEP 5 (rank states)                  #
+            #                   STEP 6 (rank states)                  #
             ###########################################################
 
             # rank states and get new 
-            logging.info('ranking states\n')
             if hasattr(self.ranking_obj, 'state_rankings'):
                 self.ranking_obj.state_rankings = state_rankings
             if hasattr(self.ranking_obj, 'distance_metric'):
@@ -790,9 +864,19 @@ class AdaptiveSampling(base):
                     self.ranking_obj.state_centers = md.load(
                         self.msm_dir+'/data/full_centers.xtc',
                         top=self.msm_dir+'/prot_masses.pdb')
+            logging.info('ranking states\n')
             new_states = self.ranking_obj.select_states(self.msm_obj, self.n_kids)
             np.save(
                 self.msm_dir + '/rankings/states_to_simulate_gen' + \
                     str(gen_num) + '.npy', new_states)
+
+            # save restarts if not saved previously
+            if (self.save_state_obj.save_routine == 'masses') or \
+                    (self.save_state_obj.centers == 'none'):
+                self.save_restart_obj.gen_num = gen_num
+                self.save_restart_obj.run(self.msm_dir)
+
         t1 = time.time()
         logging.info("Total time took %0.4 seconds" % (t1 - t0))
+
+

@@ -12,6 +12,9 @@ from .md_gen.gromax import Gromax, GromaxProcessing
 # clustering wrapper
 from .msm_gen.clustering import ClusterWrap
 
+# save states wrapper
+from .msm_gen.save_states import SaveWrap
+
 # rankings
 from .sampling import rankings
 

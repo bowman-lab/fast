@@ -13,20 +13,21 @@ import glob
 import logging
 import mdtraj as md
 import numpy as np
-import time
+from enspara.util import array as ra
 from multiprocessing import Pool
+from ..base import base
 
 #######################################################################
 # code
 #######################################################################
 
-def unique_states(assignments):
-    """Search assignments array and return a list of the state ids
-    within.
-    """
-    state_nums = np.unique(assignments)
-    state_nums = state_nums[np.where(state_nums != -1)]
-    return state_nums
+#def unique_states(assignments):
+#    """Search assignments array and return a list of the state ids
+#    within.
+#    """
+#    state_nums = np.unique(assignments)
+#    state_nums = state_nums[np.where(state_nums != -1)]
+#    return state_nums
 
 
 def _save_states(centers_info):
@@ -36,40 +37,62 @@ def _save_states(centers_info):
     confs = centers_info['conf']
     frames = centers_info['frame']
     trj_filename = centers_info['trj_filename'][0]
-    topology = centers_info['topology'][0]
+    save_routine = centers_info['save_routine'][0]
+    msm_dir = centers_info['msm_dir'][0]
+    if save_routine == 'full':
+        save_masses = True
+        save_restarts = True
+    elif save_routine == 'masses':
+        save_masses = True
+        save_restarts = False
+    elif save_routine == 'restarts':
+        save_masses = False
+        save_restarts = True
+    else:
+        raise
     # load structs trajectories
-    trj = md.load('./trajectories/' + trj_filename, top=topology)
-    trj_full = md.load(
-        './trajectories_full/' + trj_filename, top="restart.gro")
+    if save_masses:
+        trj = md.load(
+            msm_dir + '/trajectories/' + trj_filename,
+            top=msm_dir + "/prot_masses.pdb")
+    if save_restarts:
+        trj_full = md.load(
+            msm_dir + '/trajectories_full/' + trj_filename,
+            top=msm_dir + "/restart.gro")
     for num in range(len(states)):
-        # save center after processing
-        pdb_filename = "./centers_masses/state" + ('%06d' % states[num]) + \
-            '-' + ('%02d' % confs[num]) + ".pdb"
-        center = trj[frames[num]]
-        center.save_pdb(pdb_filename)
-        # save center for restarting simulations
-        pdb_filename = "./centers_restarts/state" + ('%06d' % states[num]) + \
-            '-' + ('%02d' % confs[num]) + ".gro"
-        center = trj_full[frames[num]]
-        center.save_gro(pdb_filename)
+        if save_masses:
+            # save center after processing
+            pdb_filename = msm_dir + \
+                "/centers_masses/state%06d-%02d.pdb" % \
+                (states[num], confs[num])
+            center = trj[frames[num]]
+            center.save_pdb(pdb_filename)
+        if save_restarts:
+            # save center for restarting simulations
+            pdb_filename = msm_dir + \
+                "/centers_restarts/state%06d-%02d.gro" % \
+                (states[num], confs[num])
+            center = trj_full[frames[num]]
+            center.save_gro(pdb_filename)
     return
 
 
 def save_states(
-        assignments, distances, state_nums=None,
-        largest_center=np.inf, n_confs=1, n_procs=1):
+        assignments, distances, state_nums=None, save_routine='full',
+        largest_center=np.inf, n_confs=1, n_procs=1, msm_dir='.'):
     """Saves specified state-numbers by searching through the
     assignments and distances. Can specify a largest distance to a
     cluster center to save computational time searching for min
     distances. If multiple conformations are saved, the center is saved
     as conf-0 and the rest are random conformations.
     """
-    t0 = time.time()
     if state_nums is None:
         state_nums = unique_states(assignments)
     trj_filenames = np.sort(
         np.array(
-            [s.split("/")[-1] for s in glob.glob("./trajectories/*.xtc")]))
+            [
+                s.split("/")[-1]
+                for s in glob.glob(msm_dir + "/trajectories/*.xtc")]))
     topology = "prot_masses.pdb"
     # reduce the number of conformations to search through
     reduced_iis = np.where((distances > -0.1)*(distances < largest_center))
@@ -100,19 +123,18 @@ def save_states(
                 (
                     state, conf_num, trj_num,
                     frame_nums[conf_num], trj_filenames[trj_num],
-                    topology))
+                    save_routine, msm_dir))
     if type(topology) == str:
         centers_location = np.array(
             centers_location, dtype=[
                 ('state', 'int'), ('conf', 'int'), ('trj_num', 'int'),
                 ('frame', 'int'), ('trj_filename', np.str_, 800),
-                ('topology', np.str_, 800)])
+                ('save_routine', np.str_, 10), ('msm_dir', np.str_, 800)])
     unique_trjs = np.unique(centers_location['trj_num'])
     partitioned_centers_info = []
     for trj in unique_trjs:
         partitioned_centers_info.append(
             centers_location[np.where(centers_location['trj_num'] == trj)])
-    logging.info("  Saving states!")
     if n_procs == 1:
         for pci in partitioned_centers_info:
             _save_states(pci)
@@ -120,7 +142,79 @@ def save_states(
         pool = Pool(processes=n_procs)
         pool.map(_save_states, partitioned_centers_info)
         pool.terminate()
-    t1 = time.time()
-    logging.info("    Finished in %0.2f seconds" % (t1-t0))
     return
 
+
+class SaveWrap(base):
+    """Save states wrapping object
+
+    Parameters
+    ----------
+    save_routine : str, default='full',
+        The type of states to save. Three options: 1) 'masses' saves
+        only in the centers_masses, 2) 'restarts' saves only the
+        restarts, and 3) 'full' saves both.
+    """
+    def __init__(
+            self, save_routine='full', centers='unique',
+            gen_num=0, largest_center=np.inf, n_procs=1):
+        self.save_routine = save_routine
+        self.centers = centers
+        self.gen_num = gen_num    
+        self.largest_center = largest_center
+        self.n_procs = n_procs
+
+    @property
+    def class_name(self):
+        return "SaveWrap"
+
+    @property
+    def config(self):
+        return {
+            'save_routine': self.save_routine,
+            'centers': self.centers,
+            'gen_num': self.gen_num,
+            'largest_center': self.largest_center,
+            'n_procs': self.n_procs}
+
+    def check_save_states(self, msm_dir):
+        assigns = ra.load(msm_dir + '/data/assignments.h5')
+        unique_states = np.unique(assigns)
+        n_states = unique_states.shape[0]
+        correct_save = True
+        save_masses = False
+        save_restarts = False
+        if (self.save_routine == 'masses') or (self.save_routine == 'full'):
+            save_masses = True
+        if (self.save_routine == 'restarts') or (self.save_routine == 'full'):
+            save_restarts = True
+        if (self.centers == 'none') or (self.centers == 'restarts'):
+            pass
+        else:
+            if save_masses:
+                n_masses = len(glob.glob(msm_dir + '/centers_masses/*.pdb'))
+                if n_masses != n_states:
+                    correct_save = False
+            if save_restarts:
+                n_restarts = len(glob.glob(msm_dir + '/centers_restarts/*.gro'))
+                if n_restarts != n_states:
+                    correct_save = False
+        return correct_save
+
+    def run(self, msm_dir='.'):
+        if self.centers != 'none':
+            assignments = ra.load(msm_dir + "/data/assignments.h5")
+            distances = ra.load(msm_dir + "/data/distances.h5")
+            if self.centers == 'auto':
+                state_nums = np.load(msm_dir + "/data/unique_states.npy")
+            elif self.centers == 'all':
+                state_nums = None
+            elif self.centers == 'restarts':
+                states_to_simulate_file = \
+                    msm_dir + "/rankings/states_to_simulate_gen" + \
+                    str(self.gen_num) + ".npy"
+                state_nums = np.load(states_to_simulate_file)
+            save_states(
+                assignments, distances, state_nums=state_nums,
+                n_procs=self.n_procs, largest_center=self.largest_center,
+                save_routine=self.save_routine, msm_dir=msm_dir)
