@@ -100,7 +100,7 @@ def _gen_initial_sims(
     pids = np.array(pids)
     q_check_obj.wait_for_pids(pids, wait_for_all=True)
     t1 = time.time()
-    logging.info("simulations took " + str(t1-t0) + " seconds")
+    logging.info("simulations took %0.4f seconds" % (t1-t0))
     return pids
 
 
@@ -148,7 +148,7 @@ def _prop_sims(base_dir, trj_obj, gen_num, q_check_obj, new_states):
     pids = np.array(pids)
     q_check_obj.wait_for_pids(pids, wait_for_all=True)
     t1 = time.time()
-    logging.info("simulations took " + str(t1 - t0) + " seconds")
+    logging.info("simulations took %0.4f seconds" % (t1 - t0))
     return pids
     
 
@@ -286,7 +286,7 @@ def _prop_msm(msm_dir, msm_obj):
     if msm_obj.eq_probs_ is not None:
         np.save(msm_dir + '/data/populations.npy', msm_obj.eq_probs_)
     t1 = time.time()
-    logging.info("building MSM took " + str(t1-t0) + " seconds")
+    logging.info("building MSM took %0.4f seconds" % (t1-t0))
     return msm_obj
 
 
@@ -380,7 +380,7 @@ def _perform_analysis(
                 'The number of state rankings does not match the number ' + \
                 'of states in the assignments! Analysis must have failed :`(')
     t1 = time.time()
-    logging.info("analysis took " + str(t1-t0) + " seconds")
+    logging.info("analysis took %0.4f seconds" %(t1-t0))
     return state_rankings
 
 def push_forward(s, num=0):
@@ -493,8 +493,8 @@ class AdaptiveSampling(base):
             "\nupdating clustering and analysis every:\n    " + \
             str(self.update_freq) + " gens")
         print("\nsimulation object:\n" + push_forward(str(self.sim_obj), 4))
-#        print(
-#            "\nclustering object:\n" + push_forward(str(self.cluster_obj), 4))
+        print(
+            "\nclustering object:\n" + push_forward(str(self.cluster_obj), 4))
         print("\nanalysis object:\n" + push_forward(str(self.analysis_obj), 4))
 #        print("\nMSM object:\n" + push_forward(str(self.msm_obj), 4))
         print("\nranking object:\n" + push_forward(str(self.ranking_obj), 4))
@@ -582,7 +582,7 @@ class AdaptiveSampling(base):
                 raise
             # log clustering time
             t_post = time.time()
-            logging.info("clustering took %0.2f seconds" % (t_post - t_pre))
+            logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
 
         ###########################################################
         #               restarting adaptive sampling              #
@@ -654,7 +654,7 @@ class AdaptiveSampling(base):
                 if not correct_clust:
                     raise
                 t_post = time.time()
-                logging.info("clustering took %0.2f seconds" % (t_post - t_pre))
+                logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
         # determine if updating data
         if int(gen_num % self.update_freq) == 0:
             update_data = True
@@ -755,7 +755,7 @@ class AdaptiveSampling(base):
             if not correct_clust:
                 raise
             t_post = time.time()
-            logging.info("clustering took %0.2f seconds" % (t_post - t_pre))
+            logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
             
             ###########################################################
             #               STEP 3 (analysis of centers)              #
@@ -795,4 +795,4 @@ class AdaptiveSampling(base):
                 self.msm_dir + '/rankings/states_to_simulate_gen' + \
                     str(gen_num) + '.npy', new_states)
         t1 = time.time()
-        logging.info("Total time took %0.2 seconds" % (t1 - t0))
+        logging.info("Total time took %0.4 seconds" % (t1 - t0))
