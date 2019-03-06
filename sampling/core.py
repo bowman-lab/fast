@@ -399,16 +399,54 @@ class AdaptiveSampling(base):
 
     Parameters
     ----------
+    initial_state : str or MDTraj object,
+        The starting structure for adaptive sampling.
+    n_gens : int, default=1,
+        The number of generations of sampling to perform.
+    n_kids : int, default=1,
+        The number of simulations per generation of adaptive sampling.
+    sim_obj : object, default=None,
+        An object that can run simulations. Currently supported within
+        this package are Gromacs and Upside wrappers.
+    cluster_obj : object, default=None,
+        A cluster wrapper that dictates how simulations are clustered.
+    save_state_obj : object, default=None,
+        Can optionally provide an object that dictates how states are saved.
     msm_obj : enspara.msm.MSM object
         An enspara MSM object. This is used to fit assignments at each
-        round of sampling.
+        generation of sampling.
+    analysis_obj : object, default=None,
+        Type of analysis to perform on each cluster center. Can be used in
+        state rankings.
     ranking_obj : rankings object
         This is an object with at least two functions: __init__(**args)
         and select_states(msm, n_clones). The output of this object is
         a list of states to simulate.
+    spreading_func : func, default=None,
+        Optionally spread state selection by minimizing similarity penalty,
+        calculated using the provided metric for calculating state-distances.
+        i.e. md.rmsd.
+    update_freq : int, default=np.inf,
+        The number of generations between a full reclustering of states and
+        analysis of cluster centers. Defaults to never reclustering
+        (continually adds new cluster centers without changing previously
+        discovered centers).
+    continue_prev : bool, default=False,
+        Flag to indicate if sampling is continuing from a previous run.
+        Avoids accidentally overwritting a previous run of sampling.
+    sub_obj : object, default=None,
+        A submission object that handles submitting clustering, MSM,
+        analysis, and save_state routines. Wrappers are available for
+        Slurm queueing systems as well as local machines (subprocess calls).
+    q_check_obj : object, default=None,
+        An object that handles checking queueing system for jobs that are
+        still running.
+    output_dir : str, default='adaptive_sampling',
+        The output directory name for adaptive sampling run.
 
     Returns
     ----------
+    Lots of data!
     """
 
     def __init__(
@@ -877,6 +915,6 @@ class AdaptiveSampling(base):
                 self.save_restart_obj.run(self.msm_dir)
 
         t1 = time.time()
-        logging.info("Total time took %0.4 seconds" % (t1 - t0))
+        logging.info("Total time took %0.4f seconds" % (t1 - t0))
 
 

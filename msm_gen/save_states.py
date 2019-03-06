@@ -154,9 +154,24 @@ class SaveWrap(base):
         The type of states to save. Three options: 1) 'masses' saves
         only in the centers_masses, 2) 'restarts' saves only the
         restarts, and 3) 'full' saves both.
+    centers : str, default='auto',
+        The indicator for the set of centers to save. Four options:
+        1) 'all' will save every center, 2) 'none' will not save any centers,
+        3) 'restarts' will only save the centers to use for
+        restarting simulations, and 4) 'auto' will only save new states
+        that were discovered in previous round of sampling.
+    gen_num : int, default=0,
+        The generation number of adaptive sampling. Only used if
+        centers is set to 'restarts'.
+    largest_center : float, default=np.inf,
+        The largest distance to a cluster center expected. Can be used
+        to speed up searching for cluster centers. A reasonable value
+        if the distance cutoff used for clustering.
+    n_procs : int, default=1,
+        The number of processes to use when saving states.
     """
     def __init__(
-            self, save_routine='full', centers='unique',
+            self, save_routine='full', centers='auto',
             gen_num=0, largest_center=np.inf, n_procs=1):
         self.save_routine = save_routine
         self.centers = centers
