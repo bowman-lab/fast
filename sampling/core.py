@@ -509,16 +509,18 @@ class AdaptiveSampling(base):
 
     def run(self):
         # after setup, adaptive sampling proceeds with the following steps:
-        # 1) run simulation, process trajectories, and move them to the
+        # 1) simulate, process trajectories, and move them to the
         #    msm directory
         # 2) cluster the conformations and save assignments, distances,
         #    and cluster centers
-        # 3) build the MSM and save transition matrix
-        # 4) optionally analyze the cluster centers and save the results
+        # 3) analyze the cluster centers and save the results
         #    of the analysis
+        # 4) build the MSM and save transition matrix
         # 5) rank states for reselection based on structural analysis
         #    (optional) and MSM statistics
-        # 6) restart simulations from top ranking states
+        # 
+        # If restarting an adaptive sampling run, attempts to move simulations
+        # from the last gen and recluster
         self.print_parameters()
         # set msmdir
         msm_dir = self.output_dir + '/msm'
@@ -527,6 +529,12 @@ class AdaptiveSampling(base):
         # initilize adaptive sampling if not continuing a previous run
         # builds directories, generates first run of sampling, and
         # clusters data
+
+
+        ###########################################################
+        #               First generation of sampling              #
+        ###########################################################
+
         if not self.continue_prev:
             # build initial directory structure
             logging.info('building directories')
@@ -541,6 +549,11 @@ class AdaptiveSampling(base):
                 logging.warning(
                     "Could not save initial state. Initial state is not pdb or gro?")
                 self.cluster_obj.base_struct_md.save_gro(msm_dir + '/restart.gro')
+
+            ###########################################################
+            #                  STEP 1 (simulations)                   #
+            ###########################################################
+
             # initialize first run of sampling
             logging.info('starting initial simulations')
             _gen_initial_sims(
@@ -549,43 +562,70 @@ class AdaptiveSampling(base):
             # move trajectories after sampling
             logging.info('moving trajectories')
             _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
+
+            ###########################################################
+            #                  STEP 2 (clustering)                    #
+            ###########################################################
+
             # submit clustering job
             logging.info('clustering simulation data')
             t_pre = time.time()
+            # since its the first round of sampling, build full msm
             self.cluster_obj.build_full = True
             _pickle_submit(
                 self.msm_dir, self.cluster_obj, self.sub_obj,
                 self.q_check_obj, gen_num, 'clusterer')
+            # check that clustering went well
             correct_clust =  self.cluster_obj.check_clustering(
                 self.msm_dir, gen_num, self.n_kids)
             if not correct_clust:
                 raise
+            # log clustering time
             t_post = time.time()
-            logging.info("clustering took " + str(t_post - t_pre) + " seconds")
+            logging.info("clustering took %0.2f seconds" % (t_post - t_pre))
+
+        ###########################################################
+        #               restarting adaptive sampling              #
+        ###########################################################
+
+        # if continuing from a previous run, determines gen, and
+        # attempts to move trajectories, cluster data, build MSM,
+        # rank states, and restart simulations
         else:
+            # check for valid path to restart from
             if not os.path.exists(self.output_dir):
                 raise DataInvalid(
                     "Can't continue run from output directory that doesn't" + \
                     " exist!")
+            # determine where adaptive sampling left off (looks at
+            # trajectories and folder numbers). Allows for a discrepancy.
             gen_num = _determine_gen(self.output_dir, ignore_error=True)
             gen_dir = self.output_dir + '/gen' + str(gen_num)
             logging.info('continuing adaptive sampling from run %d' % gen_num)
-            # try to move trajectories
+            # try to move trajectories from current gen and initiate clustering
             try:
                 # move trajectories
                 _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 logging.info('moving trajectories')
             except:
                 pass
+            # error check for consistent number of trajectories and
+            # gen folders
             gen_num_test = _determine_gen(self.output_dir)
             assert gen_num == gen_num_test
+
+            ###########################################################
+            #                  STEP 2 (clustering)                    #
+            ###########################################################
+
+            # determine if clustering was completed
             if os.path.exists(self.msm_dir+"/data/assignments.h5"):
-                # check clustering
+                # check if clustering was successful
                 correct_clust =  self.cluster_obj.check_clustering(
                     self.msm_dir, gen_num, self.n_kids)
             else:
                 correct_clust = False
-            # if wrong, resubmit
+            # if not, recluster
             if not correct_clust:
                 # submit clustering job
                 logging.info('clustering simulation data')
@@ -596,12 +636,12 @@ class AdaptiveSampling(base):
                 if gen_num == 0:
                     try:
                         _move_cluster_data(
-                        self.msm_dir, rebuild_num, self.analysis_obj)
+                            self.msm_dir, rebuild_num, self.analysis_obj)
                     except:
                         pass
                 else:
                     _move_cluster_data(
-                    self.msm_dir, rebuild_num, self.analysis_obj)
+                        self.msm_dir, rebuild_num, self.analysis_obj)
                 t_pre = time.time()
                 # built in rebuild everything if restarting sims
                 self.cluster_obj.build_full = True
@@ -614,24 +654,42 @@ class AdaptiveSampling(base):
                 if not correct_clust:
                     raise
                 t_post = time.time()
-                logging.info("clustering took " + str(t_post - t_pre) + " seconds")
+                logging.info("clustering took %0.2f seconds" % (t_post - t_pre))
         # determine if updating data
         if int(gen_num % self.update_freq) == 0:
             update_data = True
         else:
             update_data = False
-        # analysis
+
+        ###########################################################
+        #               STEP 3 (analysis of centers)              #
+        ###########################################################
+
+        # run analysis object routine
         logging.info('analyzing cluster data')
         state_rankings = _perform_analysis(
             self.analysis_obj, self.msm_dir, gen_num, self.sub_obj,
             self.q_check_obj, update_data)
+
+        ###########################################################
+        #                  STEP 4 (MSM generation)                #
+        ###########################################################
+
         # build msm
         logging.info('building MSM')
         self.msm_obj = _prop_msm(
             self.msm_dir, self.msm_obj)
-        # determine states to reseed and save for records
+
+        ###########################################################
+        #                   STEP 5 (rank states)                  #
+        ###########################################################
+
+        # if ranking  uses analysis from state centers, update
+        # the ranking object
         if hasattr(self.ranking_obj, 'state_rankings'):
             self.ranking_obj.state_rankings = state_rankings
+        # if the ranking object uses rmsd information, load cluster
+        # centers and update the ranking object
         if hasattr(self.ranking_obj, 'distance_metric'):
             if self.ranking_obj.distance_metric is not None:
                 logging.info('loading centers for spreading')
@@ -639,6 +697,7 @@ class AdaptiveSampling(base):
                     self.msm_dir+'/data/full_centers.xtc',
                     top=self.msm_dir+'/prot_masses.pdb')
         logging.info('ranking states\n')
+        # rank states
         new_states = self.ranking_obj.select_states(self.msm_obj, self.n_kids)
         np.save(
             self.msm_dir + '/rankings/states_to_simulate_gen' + \
@@ -648,8 +707,14 @@ class AdaptiveSampling(base):
         ################################################################
         #                 main adaptive sampling loop                  #
         ################################################################
+
         # iterate adaptive sampling until gen reaches n_gens
         for gen_num in np.arange(gen_num + 1, self.n_gens):
+
+            ###########################################################
+            #                  STEP 1 (simulations)                   #
+            ###########################################################
+
             logging.info('STARTING GEN NUM: %d' % gen_num)
             gen_dir = self.output_dir + '/gen' + str(gen_num)
             # propagate trajectories
@@ -664,6 +729,11 @@ class AdaptiveSampling(base):
             # ensure proper trajectories
             gen_num_test = _determine_gen(self.output_dir)
             assert gen_num == gen_num_test
+
+            ###########################################################
+            #                  STEP 2 (clustering)                    #
+            ###########################################################
+
             # determine if updating data
             if int(gen_num % self.update_freq) == 0:
                 logging.info('updating all cluster centers')
@@ -685,16 +755,31 @@ class AdaptiveSampling(base):
             if not correct_clust:
                 raise
             t_post = time.time()
-            logging.info("clustering took " + str(t_post - t_pre) + " seconds")
+            logging.info("clustering took %0.2f seconds" % (t_post - t_pre))
+            
+            ###########################################################
+            #               STEP 3 (analysis of centers)              #
+            ###########################################################
+
             # analysis
             logging.info('analyzing cluster data')
             state_rankings = _perform_analysis(
                 self.analysis_obj, self.msm_dir, gen_num, self.sub_obj,
                 self.q_check_obj, update_data)
+
+            ###########################################################
+            #                  STEP 4 (MSM generation)                #
+            ###########################################################
+
             # build msm
             logging.info('building MSM')
             self.msm_obj = _prop_msm(
                 self.msm_dir, self.msm_obj)
+
+            ###########################################################
+            #                   STEP 5 (rank states)                  #
+            ###########################################################
+
             # rank states and get new 
             logging.info('ranking states\n')
             if hasattr(self.ranking_obj, 'state_rankings'):
@@ -710,4 +795,4 @@ class AdaptiveSampling(base):
                 self.msm_dir + '/rankings/states_to_simulate_gen' + \
                     str(gen_num) + '.npy', new_states)
         t1 = time.time()
-        logging.info("Total time took " + str(t1 - t0) + " seconds")
+        logging.info("Total time took %0.2 seconds" % (t1 - t0))
