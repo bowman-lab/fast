@@ -52,9 +52,10 @@ def _save_states(centers_info):
         raise
     # load structs trajectories
     if save_masses:
+        top = md.load(msm_dir+"/prot_masses.pdb")
         trj = md.load(
             msm_dir + '/trajectories/' + trj_filename,
-            top=msm_dir + "/prot_masses.pdb")
+            top=top)
     if save_restarts:
         trj_full = md.load(
             msm_dir + '/trajectories_full/' + trj_filename,
@@ -66,6 +67,7 @@ def _save_states(centers_info):
                 "/centers_masses/state%06d-%02d.pdb" % \
                 (states[num], confs[num])
             center = trj[frames[num]]
+            center.superpose(top)
             center.save_pdb(pdb_filename)
         if save_restarts:
             # save center for restarting simulations

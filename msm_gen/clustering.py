@@ -34,6 +34,7 @@ def load_trjs(n_procs=1, **kwargs):
     """Parallelize loading trajectories from msm directory."""
     # get filenames
     trj_filenames = np.sort(np.array(glob.glob("trajectories/*.xtc")))
+    print(trj_filenames)
     # parallelize load with **kwargs
     partial_load = partial(md.load, **kwargs)
     pool = Pool(processes=n_procs)
@@ -143,9 +144,12 @@ class ClusterWrap(base):
         # save data
         ra.save("./data/assignments.h5", assignments)
         ra.save("./data/distances.h5", distances)
-        trjs_sub[self.base_clust_obj.center_indices_].save_xtc(
+        trjs_sub = trjs_sub[self.base_clust_obj.center_indices_]
+        trjs_sub.superpose(trjs_sub[0])
+        trjs_sub.save_xtc(
             "./data/centers.xtc")
         full_centers = trjs[self.base_clust_obj.center_indices_]
+        full_centers.superpose(full_centers[0])
         full_centers.save_xtc("./data/full_centers.xtc")
         # save states
         n_states = len(self.base_clust_obj.center_indices_)
