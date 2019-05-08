@@ -30,11 +30,18 @@ from multiprocessing import Pool
 #######################################################################
 
 
-def load_trjs(n_procs=1, **kwargs):
+def load_trjs(trj_filenames, n_procs=1, **kwargs):
     """Parallelize loading trajectories from msm directory."""
     # get filenames
-    trj_filenames = np.sort(np.array(glob.glob("trajectories/*.xtc")))
-    print(trj_filenames)
+    trj_filenames_test = np.sort(np.array(glob.glob("trajectories/*.xtc")))
+    t0 = time.time()
+    while trj_filenames != trj_filenames_test:
+        t1 = time.time()
+        logging.info(
+            'waiting on nfs. missing %d files (%0.2f s)' % \
+            (trj_filenames.shape[0]-trj_filenames_test.shape[0], t1-t0))
+        time.sleep(15)
+        trj_filenames_test = np.sort(np.array(glob.glob("trajectories/*.xtc")))
     # parallelize load with **kwargs
     partial_load = partial(md.load, **kwargs)
     pool = Pool(processes=n_procs)
@@ -94,6 +101,7 @@ class ClusterWrap(base):
             self.atom_indices_vals = atom_indices
         self.n_procs = n_procs
         self.build_full = build_full
+        self.trj_filenames = None
 
     def check_clustering(self, msm_dir, gen_num, n_kids, verbose=True):
         correct_clustering = True
@@ -118,11 +126,19 @@ class ClusterWrap(base):
         'atom_indices': self.atom_indices,
         'build_full': self.build_full,
         'n_procs': self.n_procs,
+        'trj_filenames': self.trj_filenames,
         }
+
+    def set_filenames(self, msm_dir):
+        self.trj_filenames = np.sort(
+            np.array(glob.glob(msm_dir + "trajectories/*.xtc")))
+        return
 
     def run(self):
         # load and concat trjs
-        trjs = load_trjs(n_procs=self.n_procs, top=self.base_struct_md)
+        trjs = load_trjs(
+            trj_filenames=self.trj_filenames,
+            n_procs=self.n_procs, top=self.base_struct_md)
         trj_lengths = [len(t) for t in trjs]
         trjs = md.join(trjs)
         trjs_sub = trjs.atom_slice(self.atom_indices_vals)

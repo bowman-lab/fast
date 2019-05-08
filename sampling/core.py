@@ -620,6 +620,7 @@ class AdaptiveSampling(base):
             t_pre = time.time()
             # since its the first round of sampling, build full msm
             self.cluster_obj.build_full = True
+            self.cluster_obj.set_filenames(self.msm_dir)
             _pickle_submit(
                 self.msm_dir, self.cluster_obj, self.sub_obj,
                 self.q_check_obj, gen_num, 'clusterer')
@@ -712,6 +713,7 @@ class AdaptiveSampling(base):
                 t_pre = time.time()
                 # built in rebuild everything if restarting sims
                 self.cluster_obj.build_full = True
+                self.cluster_obj.set_filenames(self.msm_dir)
                 _pickle_submit(
                     self.msm_dir, self.cluster_obj, self.sub_obj,
                     self.q_check_obj, gen_num, 'clusterer')
@@ -840,6 +842,12 @@ class AdaptiveSampling(base):
             logging.info('clustering simulation data')
             t_pre = time.time()
             self.cluster_obj.build_full = update_data
+
+            # touch trajectories...
+            cmd = 'touch %s/trajectories/*.xtc' % self.msm_dir
+            tools.run_commands(cmd)
+
+            self.cluster_obj.set_filenames(self.msm_dir)
             _pickle_submit(
                 self.msm_dir, self.cluster_obj, self.sub_obj,
                 self.q_check_obj, gen_num, 'clusterer')
