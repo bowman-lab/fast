@@ -315,11 +315,13 @@ def _move_cluster_data(msm_dir, rebuild_num, analysis_obj=None):
         except:
             pass
     # move data and centers
-    cmd1 = 'mv ' + msm_dir + '/data ' + old_dir + '/data' + str(rebuild_num)
+    backup = ' --backup=numbered'
+    cmd1 = 'mv ' + msm_dir + '/data ' + old_dir + '/data' + \
+        str(rebuild_num) + backup
     cmd2 = 'mv ' + msm_dir + '/centers_masses ' + old_dir + \
-        '/centers_masses' + str(rebuild_num)
+        '/centers_masses' + str(rebuild_num) + backup
     cmd3 = 'mv ' + msm_dir + '/centers_restarts ' + old_dir + \
-        '/centers_restarts' + str(rebuild_num)
+        '/centers_restarts' + str(rebuild_num) + backup
     # rebuild directories
     cmd4 = 'mkdir ' + msm_dir + '/data'
     cmd5 = 'mkdir ' + msm_dir + '/centers_masses'

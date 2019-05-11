@@ -25,6 +25,12 @@ from enspara.util import array as ra
 from functools import partial
 from multiprocessing import Pool
 
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
+
 #######################################################################
 # code
 #######################################################################
@@ -33,15 +39,20 @@ from multiprocessing import Pool
 def load_trjs(trj_filenames, n_procs=1, **kwargs):
     """Parallelize loading trajectories from msm directory."""
     # get filenames
-    trj_filenames_test = np.sort(np.array(glob.glob("trajectories/*.xtc")))
+    trj_filenames_test = np.array(
+        [
+            os.path.abspath(f) 
+            for f in np.sort(np.array(glob.glob("trajectories/*.xtc")))])
     t0 = time.time()
-    while trj_filenames != trj_filenames_test:
+    diffs = np.setdiff1d(trj_filenames, trj_filenames_test)
+    while diffs.shape[0] != 0:
         t1 = time.time()
         logging.info(
             'waiting on nfs. missing %d files (%0.2f s)' % \
             (trj_filenames.shape[0]-trj_filenames_test.shape[0], t1-t0))
         time.sleep(15)
         trj_filenames_test = np.sort(np.array(glob.glob("trajectories/*.xtc")))
+        diffs = np.setdiff1d(trj_filenames, trj_filenames_test)
     # parallelize load with **kwargs
     partial_load = partial(md.load, **kwargs)
     pool = Pool(processes=n_procs)
@@ -131,7 +142,7 @@ class ClusterWrap(base):
 
     def set_filenames(self, msm_dir):
         self.trj_filenames = np.sort(
-            np.array(glob.glob(msm_dir + "trajectories/*.xtc")))
+            np.array(glob.glob(msm_dir + "/trajectories/*.xtc")))
         return
 
     def run(self):
