@@ -51,6 +51,7 @@ def load_trjs(trj_filenames, n_procs=1, **kwargs):
             'waiting on nfs. missing %d files (%0.2f s)' % \
             (trj_filenames.shape[0]-trj_filenames_test.shape[0], t1-t0))
         time.sleep(15)
+        _ = tools.run_commands('ls trajectories/*.xtc')
         trj_filenames_test = np.array(
             [
                 os.path.abspath(f) 
