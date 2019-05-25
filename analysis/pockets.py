@@ -105,7 +105,7 @@ class PocketWrap(base_analysis):
         pocket volume.
     grid_spacing : float, default = 0.1,
         The spacing for grid around the protein.
-    probe_radius : float, default = 0.07,
+    probe_radius : float, default = 0.14,
         The radius of the grid point to probe for pocket elements.
     min_rank : int, default = 4,
         Minimum rank for defining a pocket element. Ranges from 1-7, 1
