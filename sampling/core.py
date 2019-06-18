@@ -443,6 +443,9 @@ class AdaptiveSampling(base):
     q_check_obj : object, default=None,
         An object that handles checking queueing system for jobs that are
         still running.
+    q_check_obj_sim : object, default=None,
+        An object that handles checking queueing system for jobs that are
+        still running.
     output_dir : str, default='adaptive_sampling',
         The output directory name for adaptive sampling run.
 
@@ -456,7 +459,8 @@ class AdaptiveSampling(base):
             cluster_obj=None, save_state_obj=None, msm_obj=None,
             analysis_obj=None, ranking_obj=None, spreading_func=None,
             update_freq=np.inf, continue_prev=False, sub_obj=None,
-            q_check_obj=None, output_dir='adaptive_sampling', verbose=True):
+            q_check_obj=None, q_check_obj_sim=None,
+            output_dir='adaptive_sampling', verbose=True):
         # Initialize class variables
         self.sim_obj = sim_obj
         self.initial_state = initial_state
@@ -494,6 +498,10 @@ class AdaptiveSampling(base):
             self.q_check_obj = slurm_subs.SlurmWrap()
         else:
             self.q_check_obj = q_check_obj
+        if q_check_obj_sim is None:
+            self.q_check_obj_sim = slurm_subs.SlurmWrap()
+        else:
+            self.q_check_obj_sim = q_check_obj_sim
         self.output_dir = os.path.abspath(output_dir)
         self.msm_dir = self.output_dir + '/msm'
         self.verbose = verbose
@@ -517,6 +525,7 @@ class AdaptiveSampling(base):
             'continue_prev': self.continue_prev,
             'sub_obj': self.sub_obj,
             'q_check_obj': self.q_check_obj,
+            'q_check_obj_sim': self.q_check_obj_sim,
             'output_dir': self.output_dir,
             'verbose': self.verbose,
         }
@@ -552,6 +561,9 @@ class AdaptiveSampling(base):
         print(
             "\nqueue checking object:\n" + \
             push_forward(str(self.q_check_obj), 4))
+        print(
+            "\nsim queue checking object:\n" + \
+            push_forward(str(self.q_check_obj_sim), 4))
         print(
             "\n###########################################################" + \
             "##################\n")
@@ -608,7 +620,7 @@ class AdaptiveSampling(base):
             logging.info('starting initial simulations')
             _gen_initial_sims(
                 self.output_dir, self.initial_state_md, self.sim_obj,
-                self.n_kids, self.q_check_obj)
+                self.n_kids, self.q_check_obj_sim)
             # move trajectories after sampling
             logging.info('moving trajectories')
             _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
@@ -818,7 +830,7 @@ class AdaptiveSampling(base):
             str_states = ", ".join([str(state) for state in new_states])
             logging.info('starting simulations for states: ' + str_states)
             _prop_sims(
-                self.output_dir, self.sim_obj, gen_num, self.q_check_obj,
+                self.output_dir, self.sim_obj, gen_num, self.q_check_obj_sim,
                 new_states)
             # move trajectories
             logging.info('moving trajectories')

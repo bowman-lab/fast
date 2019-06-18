@@ -47,6 +47,9 @@ class OSWrap(base):
             'max_n_procs': self.max_n_procs
         }
 
+    def get_submission_names(self, pid=None):
+        return ['os_output.txt']
+
     def wait_for_pids(self, pids, wait_time=2, wait_for_all=False):
         # if waiting for all, the maximum number of procs running
         # should be zero
@@ -96,21 +99,27 @@ class SPSub(base):
             'wait': self.wait
         }
 
-    def run(self, cmds, output_dir=None):
+    def run(self, cmds, output_dir=None, output_name=None):
+        cmds = np.array(cmds).reshape(-1)
         # set home and output dir
         home_dir = os.path.abspath("./")
         if output_dir is None:
             output_dir = os.path.abspath("./")
         os.chdir(output_dir)
+        if  output_name is None:
+            output_name = 'os_submission'
+        f = open(output_name, 'w')
+        f.write("\n".join(cmds))
+        f.close()
         # submit
         p = sp.Popen(
-            "\n".join(cmds), shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
+            "bash %s &> os_output.txt" % output_name, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
         # optionally wait for job to finish
         if self.wait:
             out,err = p.communicate()
             print(out.decode('utf-8'))
             print(err.decode('utf-8'))
-            job_sub = None
+            job_sub = p.pid
         else:
             job_sub = p.pid
         # return home
