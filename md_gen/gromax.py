@@ -191,7 +191,7 @@ class Gromax(base):
             tools.run_commands(cmds)
         return
 
-    def run(self, struct, output_dir=None):
+    def run(self, struct, output_dir=None, check_continue=True):
         # setup_run
         self.setup_run(struct=struct, output_dir=output_dir)
         if self.min_run:
@@ -230,10 +230,17 @@ class Gromax(base):
         additions = " ".join(
             ['-' + i[0] + ' ' + i[1] for i in np.transpose([keys, values])])
         mdrun_cmd += ' ' + additions + '\n'
+        # check for previous tpr for continuation
+        if check_continue:
+            tpr_filename = self.output_dir + "/md.tpr"
+            bash_check_cmd = 'if [ ! -f "%s" ]; then\n' % tpr_filename
+            bash_check_cmd += '    echo "Didn\'t find md.tpr, running grompp..."\n'
+            bash_check_cmd += '    ls\n    pwd\n    %s' % grompp_cmd
+            bash_check_cmd += 'else\n    echo "Found md.tpr, not running grompp"\nfi\n\n'
+            grompp_cmd = bash_check_cmd
         # combine commands and submit to submission object
         cmds = [source_cmd, grompp_cmd, mdrun_cmd]
         cmds.append(self.processing_obj.run())
         job_id = self.submission_obj.run(cmds, output_dir=output_dir)
         return job_id
         
-
