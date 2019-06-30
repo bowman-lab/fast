@@ -79,7 +79,7 @@ def get_running_jobs():
         print(job_listing_information)
         print(running_jobs)
         raise
-    return running_jobs
+    return np.array(running_jobs)
 
 class SlurmWrap(base):
     """Wrapper for slurm checking and waiting for jobs
