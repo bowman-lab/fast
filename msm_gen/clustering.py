@@ -22,6 +22,7 @@ from .. import tools
 from ..base import base
 from enspara import cluster
 from enspara.util import array as ra
+from enspara.util.load import load_as_concatenated
 from functools import partial
 from multiprocessing import Pool
 
@@ -151,11 +152,15 @@ class ClusterWrap(base):
 
     def run(self):
         # load and concat trjs
-        trjs = load_trjs(
-            trj_filenames=self.trj_filenames,
-            n_procs=self.n_procs, top=self.base_struct_md)
-        trj_lengths = [len(t) for t in trjs]
-        trjs = md.join(trjs)
+#        trjs = load_trjs(
+#            trj_filenames=self.trj_filenames,
+#            n_procs=self.n_procs, top=self.base_struct_md)
+#        trj_lengths = [len(t) for t in trjs]
+#        trjs = md.join(trjs)
+        trj_lengths, xyzs = load_as_concatenated(
+            filenames=self.trj_filenames, processes=self.n_procs,
+            top=self.base_struct_md)
+        trjs = md.Trajectory(xyzs, self.base_struct_md.topology)
         trjs_sub = trjs.atom_slice(self.atom_indices_vals)
         # determine if rebuilding all msm stuff
         if self.build_full:

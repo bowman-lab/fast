@@ -212,7 +212,8 @@ class Gromax(base):
             grompp_cmd +=  ' -n ' + self.index_file
         grompp_cmd += '\n'
         # generate mdrun command
-        mdrun_cmd = 'gmx mdrun -s ' + base_output_name + ' -o ' + \
+        # JRP added '-cpi state -g md' on 07-01-2019
+        mdrun_cmd = 'gmx mdrun -cpi state -g md -s ' + base_output_name + ' -o ' + \
             base_output_name + ' -c after_' + base_output_name + ' -v -nt ' + \
             str(self.n_cpus)
         # if an MD run, make default name for trajectory
