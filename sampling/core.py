@@ -225,10 +225,12 @@ def _pickle_submit(
         'c.run()')
     f.close()
     # generate python run commands for submission
-    cmd = 'python ' + base_name + '.py'
+    cmd0 = 'sync\n'
+    cmd1 = 'python ' + base_name + '.py'
+    cmds = [cmd0, cmd1]
     base_submission = base_name + '_submission'
     # submit and wait for job to finish
-    pid = sub_obj.run(cmd, output_name=base_submission)
+    pid = sub_obj.run(cmds, output_name=base_submission)
     q_check_obj.wait_for_pids([pid], wait_for_all=True)
     # clean up submission
     sub_script_name = q_check_obj.get_submission_names(pid)[0]
@@ -624,6 +626,8 @@ class AdaptiveSampling(base):
             # move trajectories after sampling
             logging.info('moving trajectories')
             _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
+            # wait for nfs to catch up
+            time.sleep(65)
 
             ###########################################################
             #                  STEP 2 (clustering)                    #
@@ -689,6 +693,8 @@ class AdaptiveSampling(base):
                 # move trajectories
                 _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 logging.info('moving trajectories')
+                # wait for nfs to catch up
+                time.sleep(65)
             except:
                 pass
             # error check for consistent number of trajectories and
@@ -838,6 +844,8 @@ class AdaptiveSampling(base):
             # ensure proper trajectories
             gen_num_test = _determine_gen(self.output_dir)
             assert gen_num == gen_num_test
+            # wait for nfs to catch up
+            time.sleep(65)
 
             ###########################################################
             #                  STEP 2 (clustering)                    #
