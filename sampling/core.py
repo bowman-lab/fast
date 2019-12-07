@@ -268,10 +268,9 @@ def _determine_gen(output_dir, ignore_error=False):
     # error check that completed sims match number of gen folders
     n_trj_gens = len(np.unique(trj_gen_nums))
     if (n_gen_folders != n_trj_gens) and not ignore_error:
-        print(
-            "number of gens is not consistent with trajectories. " + \
-            "Maybe simulations crashed?")
-        raise
+        raise DataInvalid(
+            'The number of generations are not consistent with the number ' + \
+            'of trajectories. Maybe a simulation crashed?')
     # subtract 1 for 0 based counting
     gen_num = int(np.max([n_trj_gens, n_gen_folders]) - 1)
     return gen_num
@@ -386,7 +385,7 @@ def _perform_analysis(
         if n_states_ranked != n_states:
             raise DataInvalid(
                 'The number of state rankings does not match the number ' + \
-                'of states in the assignments! Analysis must have failed :`(')
+                'of states in the assignments! Analysis may have failed!')
     t1 = time.time()
     logging.info("analysis took %0.4f seconds" %(t1-t0))
     return state_rankings
@@ -649,7 +648,7 @@ class AdaptiveSampling(base):
             correct_clust =  self.cluster_obj.check_clustering(
                 self.msm_dir, gen_num, self.n_kids)
             if not correct_clust:
-                raise
+                raise MissingData('clustering job failed!')
             # log clustering time
             t_post = time.time()
             logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
@@ -667,7 +666,7 @@ class AdaptiveSampling(base):
                 correct_save = self.save_state_obj.check_save_states(
                     self.msm_dir)
                 if not correct_save:
-                    raise
+                    raise MissingData('Saving states failed!')
                 t_post = time.time()
                 logging.info(
                     'saving states took %0.4f seconds' % (t_post - t_pre))
@@ -744,7 +743,7 @@ class AdaptiveSampling(base):
                     self.msm_dir, gen_num, self.n_kids)
                 # if still wrong, raise error
                 if not correct_clust:
-                    raise
+                    raise MissingData('clustering job failed!')
                 t_post = time.time()
                 logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
 
@@ -764,7 +763,7 @@ class AdaptiveSampling(base):
                     correct_save = self.save_state_obj.check_save_states(
                         self.msm_dir)
                     if not correct_save:
-                        raise
+                        raise MissingData('Saving states failed!')
                     t_post = time.time()
                     logging.info(
                         'saving states took %0.4f seconds' % (t_post - t_pre))
@@ -879,7 +878,7 @@ class AdaptiveSampling(base):
             correct_clust =  self.cluster_obj.check_clustering(
                 self.msm_dir, gen_num, self.n_kids)
             if not correct_clust:
-                raise
+                raise MissingData('clustering job failed!')
             t_post = time.time()
             logging.info("clustering took %0.4f seconds" % (t_post - t_pre))
 
@@ -897,7 +896,7 @@ class AdaptiveSampling(base):
                 correct_save = self.save_state_obj.check_save_states(
                     self.msm_dir)
                 if not correct_save:
-                    raise
+                    raise MissingData('Saving states failed!')
                 t_post = time.time()
                 logging.info(
                     'saving states took %0.4f seconds' % (t_post - t_pre))
