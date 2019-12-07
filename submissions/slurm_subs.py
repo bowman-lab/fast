@@ -16,6 +16,7 @@ import time
 from enspara.util import array as ra
 from .. import tools
 from ..base import base
+from ..exceptions import UnexpectedResult
 
 #######################################################################
 # code
@@ -69,17 +70,20 @@ def get_running_jobs():
                 s.split() for s in 
                 job_listing_information])[:,0]
         if running_jobs[0] != 'JOBID':
-            raise
+            raise UnexpectedResult(
+                'slurm queue wrapper failed to parse jobs!')
         else:
             running_jobs = running_jobs[1:]
     except:
-        print("an error has occured with finding jobs...")
-        print("for error checking purposes: ")
-        print(squeue_output)
-        print(job_listing_information)
-        print(running_jobs)
-        raise
+        logger.log("an error has occured with finding jobs...")
+        logger.log("for error checking purposes: ")
+        logger.log(squeue_output)
+        logger.log(job_listing_information)
+        logger.log(running_jobs)
+        raise UnexpectedResult(
+            'slurm queue wrapper failed to parse jobs!')
     return np.array(running_jobs)
+
 
 class SlurmWrap(base):
     """Wrapper for slurm checking and waiting for jobs
@@ -133,7 +137,6 @@ class SlurmWrap(base):
             pids = [pids]
         names = ['slurm-' + str(pid) + '.out' for pid in pids]
         return names
-
 
 
 class SlurmSub(base):

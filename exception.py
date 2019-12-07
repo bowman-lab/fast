@@ -16,6 +16,12 @@ class MissingData(Exception):
     pass
 
 
+class UnexpectedResult(Exception):
+    """The process has given an unexpected result that was not
+    accounted for."""
+    pass
+
+
 class ConvergenceWarning(Exception):
     """The iterative proceedure failed to converge"""
     pass
