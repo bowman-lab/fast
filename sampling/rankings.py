@@ -16,6 +16,7 @@ import time
 import scipy.sparse as spar
 from . import scalings
 from ..base import base
+from ..exceptions import ConvergenceWarning, ImproperlyConfigured
 
 ########################################################################
 # helper functions
@@ -243,7 +244,8 @@ def rank_aij(aij, d=0.85, Pi=None, max_iters=100000, norm=True):
         iters += 1
         # error out if does not converge
         if iters > max_iters:
-            raise
+            raise ConvergenceWarning(
+                'page ranking failed to converge in %s steps' % max_iters)
     # normalize rankings
     if norm:
         page_rank *= 100./page_rank.sum()
@@ -450,7 +452,8 @@ class FAST(base_ranking):
         self.alpha = alpha
         self.alpha_percent = alpha_percent
         if self.alpha_percent and ((self.alpha < 0) or (self.alpha > 1)):
-            raise
+            raise ImproperlyConfigured(
+                'alpha_percent is selected, although alpha is not between 0 and 1!')
         base_ranking.__init__(
             self, maximize_ranking=maximize_ranking, **kwargs)
 
