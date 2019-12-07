@@ -473,7 +473,10 @@ class AdaptiveSampling(base):
         self.n_gens = n_gens
         self.n_kids = n_kids
         self.cluster_obj = cluster_obj
-        self.save_state_obj = save_state_obj
+        if save_state_obj is None:
+            self.save_state_obj = SaveWrap()
+        else:
+            self.save_state_obj = save_state_obj
         self.save_restart_obj = SaveWrap(
             centers='restarts', save_routine='restarts')
         self.analysis_obj = analysis_obj
