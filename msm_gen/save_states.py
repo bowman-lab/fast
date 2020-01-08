@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import glob
 import logging
@@ -17,17 +19,10 @@ from enspara.util import array as ra
 from multiprocessing import Pool
 from ..base import base
 
+
 #######################################################################
 # code
 #######################################################################
-
-#def unique_states(assignments):
-#    """Search assignments array and return a list of the state ids
-#    within.
-#    """
-#    state_nums = np.unique(assignments)
-#    state_nums = state_nums[np.where(state_nums != -1)]
-#    return state_nums
 
 
 def _save_states(centers_info):
@@ -83,10 +78,42 @@ def save_states(
         assignments, distances, state_nums=None, save_routine='full',
         largest_center=np.inf, n_confs=1, n_procs=1, msm_dir='.'):
     """Saves specified state-numbers by searching through the
-    assignments and distances. Can specify a largest distance to a
+    assignments and distances and pulling single frames from
+    trajectories. This is a special tailored helper function that has a
+    directory structure hard-coded in. Can specify a largest distance to a
     cluster center to save computational time searching for min
     distances. If multiple conformations are saved, the center is saved
-    as conf-0 and the rest are random conformations.
+    as conf-0 and new conformations are sampled from the cluster.
+
+    Inputs
+    ----------
+    assignments : array, shape=(n_trajectories, n_frames),
+        Assigned cluster for each frame in each trajectory.
+    distances : array, shape=(n_trajectories, n_frames),
+        The distance to the cluster center for each frame
+        in each trajectory.
+    state_nums : array, shape=(n_states, ), default=None,
+        The specific state numbers for saving. If None are supplied,
+        will save every state.
+    save_routine : str, default='full',
+        The routine for saving states, either 'full', 'masses', or
+        'restarts'. 'masses' will only save the processed cluster centers,
+        'restarts' will only save the full system centers, and 'full'
+        will save both.
+    largest_center : float, default=np.inf,
+        The largest expected distance from any frame to a cluster center.
+        Specifying a small number can save in computational time. Defaults
+        to np.inf, which will consider every frame when finding cluster
+        centers.
+    n_confs : int, default=1,
+        The number of representative conformations to save of each cluster
+        center. The first conformation is always the cluster center, and
+        subsequent conformations are sampled randomly from frames clustered.
+    n_procs : int, default=1,
+        The number of processes to use when saving states.
+    msm_dir : str, default='.',
+        Location of the msm directory containing trajectories and folders
+        for saving states.
     """
     if state_nums is None:
         state_nums = unique_states(assignments)

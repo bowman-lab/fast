@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import glob
 import itertools
@@ -390,6 +392,7 @@ def _perform_analysis(
     logging.info("analysis took %0.4f seconds" %(t1-t0))
     return state_rankings
 
+
 def push_forward(s, num=0):
     s_out = s.split("\n")
     s_pushed = "\n".join(
@@ -398,7 +401,7 @@ def push_forward(s, num=0):
 
 
 class AdaptiveSampling(base):
-    """Adaptive sampling object. Runs a single adaptive sampling run.
+    """Performs adaptive sampling
 
     Parameters
     ----------
@@ -449,10 +452,6 @@ class AdaptiveSampling(base):
         still running.
     output_dir : str, default='adaptive_sampling',
         The output directory name for adaptive sampling run.
-
-    Returns
-    ----------
-    Lots of data!
     """
 
     def __init__(
@@ -948,5 +947,3 @@ class AdaptiveSampling(base):
 
         t1 = time.time()
         logging.info("Total time took %0.4f seconds" % (t1 - t0))
-
-

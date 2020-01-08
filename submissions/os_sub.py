@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import numpy as np
 import os
@@ -15,6 +17,7 @@ import subprocess as sp
 import time
 from .. import tools
 from ..base import base
+
 
 #######################################################################
 # code
@@ -76,7 +79,7 @@ class OSWrap(base):
 
 
 class SPSub(base):
-    """Submission wrapper with subprocessing.
+    """Submission wrapper using subprocessing.
 
     Parameters
     ----------
@@ -125,4 +128,4 @@ class SPSub(base):
         # return home
         os.chdir(home_dir)
         return job_sub
-        
+

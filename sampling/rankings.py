@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import enspara.tpt
 import msmbuilder.tpt
@@ -17,6 +19,7 @@ import scipy.sparse as spar
 from . import scalings
 from ..base import base
 from ..exception import ConvergenceWarning, ImproperlyConfigured
+
 
 ########################################################################
 # helper functions

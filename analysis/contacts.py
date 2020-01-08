@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import glob
 import itertools
@@ -17,14 +19,16 @@ import os
 from .base_analysis import base_analysis
 from .. import tools
 
+
 #######################################################################
 # code
 #######################################################################
 
 
-def best_hummer_q(traj, native, verbose=True, native_cutoff=0.45):
+def best_hummer_q(traj, native, verbose=False, native_cutoff=0.45):
     """Compute the fraction of native contacts according the definition from
-    Best, Hummer and Eaton [1]
+    Best, Hummer and Eaton [1].
+    Adapted from: 'http://mdtraj.org/latest/examples/native-contact.html'
     
     Parameters
     ----------
@@ -47,7 +51,6 @@ def best_hummer_q(traj, native, verbose=True, native_cutoff=0.45):
 
     BETA_CONST = 50  # 1/nm
     LAMBDA_CONST = 1.8
-#    NATIVE_CUTOFF = 0.45  # nanometers
     NATIVE_CUTOFF = native_cutoff  # nanometers
 
     # get the indices of all of the heavy atoms
@@ -73,7 +76,6 @@ def best_hummer_q(traj, native, verbose=True, native_cutoff=0.45):
     q = np.mean(
         1.0 / (1 + np.exp(BETA_CONST * (r - LAMBDA_CONST * r0))), axis=1)
     return q
-
 
 
 class ContactsWrap(base_analysis):

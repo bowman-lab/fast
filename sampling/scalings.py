@@ -5,16 +5,20 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
 
+
 import numpy as np
 from ..base import base
+
 
 #######################################################################
 # code
 #######################################################################
+
 
 class feature_scale(base):
     """Feature scales data: (x - xmin) / (xmax - xmin)"""

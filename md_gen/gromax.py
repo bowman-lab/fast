@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import mdtraj as md
 import numpy as np
@@ -15,6 +17,7 @@ import os
 from .. import tools
 from .. import submissions
 from ..base import base
+
 
 #######################################################################
 # code

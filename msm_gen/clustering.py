@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import gc
 import glob
@@ -29,7 +31,6 @@ from multiprocessing import Pool
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
 
 
 #######################################################################

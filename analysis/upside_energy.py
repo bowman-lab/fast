@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import glob
 import itertools
@@ -18,6 +20,7 @@ import os
 import upside_engine as ue # computing energies 
 from .base_analysis import base_analysis
 from .. import tools
+
 
 #######################################################################
 # code
@@ -74,5 +77,4 @@ class UpsideEnergyWrap(base_analysis):
             energies = np.zeros(centers.n_frames)
             for i, pos_i in enumerate(pos):
                 energies[i] = engine.energy(pos_i)
-            np.save(self.output_name, energies)
-        
+            np.save(self.output_name, energies)        

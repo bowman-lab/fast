@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import gc
 import glob
@@ -17,9 +19,11 @@ import os
 from .base_analysis import base_analysis
 from .. import tools
 
+
 #######################################################################
 # code
 #######################################################################
+
 
 class DistWrap(base_analysis):
     """Analysis wrapper for calculating distances between atom pairs.
@@ -75,7 +79,6 @@ class DistWrap(base_analysis):
     @property
     def base_output_name(self):
         return "distance_per_state"
-
 
     def run(self):
         # determine if file already exists

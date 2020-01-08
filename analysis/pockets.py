@@ -5,9 +5,11 @@
 # Unauthorized copying of this file, via any medium, is strictly prohibited
 # Proprietary and confidential
 
+
 #######################################################################
 # imports
 #######################################################################
+
 
 import itertools
 import glob
@@ -19,6 +21,7 @@ from .. import tools
 from enspara.geometry import pockets
 from functools import partial
 from multiprocessing import Pool
+
 
 #######################################################################
 # code
