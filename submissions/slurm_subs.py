@@ -16,7 +16,7 @@ import time
 from enspara.util import array as ra
 from .. import tools
 from ..base import base
-from ..exceptions import UnexpectedResult
+from ..exception import UnexpectedResult
 
 #######################################################################
 # code

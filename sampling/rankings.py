@@ -16,7 +16,7 @@ import time
 import scipy.sparse as spar
 from . import scalings
 from ..base import base
-from ..exceptions import ConvergenceWarning, ImproperlyConfigured
+from ..exception import ConvergenceWarning, ImproperlyConfigured
 
 ########################################################################
 # helper functions
