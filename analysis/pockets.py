@@ -79,23 +79,41 @@ def _parse_pocket_file(pocket_info):
     # unpack info
     filename, pocket_num = pocket_info
     # open file and take value at position `pocket_num`
-    f = open(filename, "r")
-    for i in range(pocket_num + 1):
-        psize = f.readline()
-    return int(psize)
+    pocket_sizes = np.loadtxt(filename, dtype=int)
+    if pocket_num is None:
+        psize = np.sum(pocket_sizes)
+    else:
+        psize = pocket_sizes[pocket_num]
+    return psize
 
 
-def parse_pocket_info(output_dir, pocket_num=0, n_cpus=1):
-    """Searches through output directory for pocket_size files and
-    parses them for pocket sizes of a given pocket num."""
-    # get data file names
-    pocket_files = np.sort(glob.glob(output_dir + "/*/pocket_sizes.dat"))
-    # parallelize the parsing
-    file_info = list(zip(pocket_files, itertools.repeat(pocket_num)))
-    pool = Pool(processes=n_cpus)
-    pockets = pool.map(_parse_pocket_file, file_info)
-    pool.terminate()
-    return np.array(pockets)
+class TopPockets:
+    """Reports pocket volume of a particular pocket.
+    
+    Parameters
+    ----------
+    pocket_number : int, default=None,
+        The pocket number to report volume. If None, will provide the
+        total pocket volume.
+    """
+
+    def __init__(self, pocket_number=None, n_cpus=1):
+        self.pocket_number = pocket_number
+        self.n_cpus = n_cpus
+
+
+    def parse_pockets(self, pockets_dir):
+        """Searches through output directory for pocket_size files and
+        parses them for pocket sizes of a given pocket num."""
+        pockets_dir = os.path.abspath(pockets_dir)
+        # get data file names
+        pocket_files = np.sort(glob.glob(pockets_dir + "/*/pocket_sizes.dat"))
+        # parallelize the parsing
+        file_info = list(zip(pocket_files, itertools.repeat(self.pocket_number)))
+        pool = Pool(processes=self.n_cpus)
+        pockets = pool.map(_parse_pocket_file, file_info)
+        pool.terminate()
+        return np.array(pockets)
 
 
 class PocketWrap(base_analysis):
@@ -103,9 +121,10 @@ class PocketWrap(base_analysis):
 
     Parameters
     ----------
-    pocket_to_report : int, default = 0,
-        Which pocket to report on. If 0, will report on the total
-        pocket volume.
+    pocket_reporter : object, default = None,
+        How to rank pocket volumes. A specific object that calls
+        `parse_pockets` must be supplied. If None are specified,
+        will use `TopPockets`, which reports on all pocket volumes.
     grid_spacing : float, default = 0.1,
         The spacing for grid around the protein.
     probe_radius : float, default = 0.14,
@@ -135,10 +154,12 @@ class PocketWrap(base_analysis):
         The filename of the final rankings.
     """
     def __init__(
-            self, pocket_to_report=0, grid_spacing=0.1, probe_radius=0.14,
+            self, pocket_reporter=None, grid_spacing=0.1, probe_radius=0.14,
             min_rank=4, min_cluster_size=0, n_cpus=1, build_full=True,
             atom_indices=None, **kwargs):
-        self.pocket_to_report = pocket_to_report
+        self.pocket_reporter = pocket_reporter
+        if self.pocket_reporter is None:
+            self.pocket_reporter = TopPockets(n_cpus=n_cpus)
         self.grid_spacing = grid_spacing
         self.probe_radius = probe_radius
         self.min_rank = min_rank
@@ -163,7 +184,7 @@ class PocketWrap(base_analysis):
     @property
     def config(self):
         return {
-            'pocket_to_report': self.pocket_to_report,
+            'pocket_reporter': self.pocket_reporter,
             'grid_spacing': self.grid_spacing,
             'probe_radius': self.probe_radius,
             'min_rank': self.min_rank,
@@ -210,8 +231,7 @@ class PocketWrap(base_analysis):
                     pdb_filenames[n_processed_states:], self.output_folder,
                     self.n_cpus)
             # parses log files for pockets and save them
-            pockets = parse_pocket_info(
-                self.output_folder, n_cpus=self.n_cpus)
+            pockets = self.pocket_reporter.parse_pockets(self.output_folder)
             np.save(self.output_name, pockets)
         
 
