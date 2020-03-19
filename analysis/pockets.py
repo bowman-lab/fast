@@ -116,6 +116,63 @@ class TopPockets:
         return np.array(pockets)
 
 
+class ResiduePockets:
+    """Reports pocket volume around selected residues.
+    
+    Parameters
+    ----------
+    atom_indices : array-like, shape=(n_atoms, ),
+        The atom indices to search around.
+    distance_cutoff : float, default=1.0,
+        The distance to search around atoms for pocket volumes.
+    n_cpus : int, default=1,
+        The number of cpus to use for determining pocket volumes.
+    """
+
+    def __init__(self, atom_indices, distance_cutoff=1.0, n_cpus=1):
+        self.atom_indices = atom_indices
+        if isinstance(self.atom_indices, (str)):
+            try:
+                self.atom_indices = np.loadtxt(self.atom_indices, dtype=int)
+            except:
+                self.atom_indices = np.array(
+                    np.load(self.atom_indices), dtype=int)
+        self.distance_cutoff = distance_cutoff
+        self.n_cpus = n_cpus
+
+    def parse_pockets(self, pockets_dir):
+        """Searches through output directory for pdbs and pockets and
+        parses them for pocket sizes around selected residues."""
+        pockets_dir = os.path.abspath(pockets_dir)
+        # get data file names
+        pocket_files = np.sort(glob.glob(pockets_dir + "/*/pocket_sizes.dat"))
+        pdb_files = np.sort(glob.glob(pockets_dir + "/../centers_masses/state*.pdb"))
+        # parallelize the parsing
+        file_info = list(
+            zip(
+                pdb_files, pocket_files,
+                itertools.repeat(self.atom_indices),
+                itertools.repeat(self.distance_cutoff)))
+        pool = Pool(processes=self.n_cpus)
+        pockets = pool.map(_determine_pocket_neighbors, file_info)
+        pool.terminate()
+        return np.array(pockets)
+
+
+def _determine_pocket_neighbors(file_info):
+    pdb_filename, pocket_filename, atom_indices, distance_cutoff = file_info
+    pdb = md.load(pdb_filename)
+    pdb_pockets = md.load(pocket_filename)
+    pdb_xyz = pdb.xyz[0, atom_indices]
+    pdb_pockets_xyz = pdb_pockets.xyz[0]
+    for n in np.arange(pdb.xyz.shape[0]):
+        diffs = np.abs(pdb_pockets_xyz - pdb_xyz[n])
+        dists = np.einsum('ij,ij->i', diffs, diffs)
+        close_iis.append(np.where(dists < distance_cutoff)[0])
+    close_iis = np.unique(np.concatenate(close_iis))
+    return len(close_iis)
+    
+
 class PocketWrap(base_analysis):
     """Analysis wrapper for pocket analysis using ligsite.
 
@@ -171,7 +228,8 @@ class PocketWrap(base_analysis):
             try:
                 self.atom_indices = np.loadtxt(self.atom_indices, dtype=int)
             except:
-                self.atom_indices = np.load(self.atom_indices, dtype=int)
+                self.atom_indices = np.array(
+                    np.load(self.atom_indices), dtype=int)
         self.pocket_func = partial(
             pockets.get_pockets, grid_spacing=grid_spacing,
             probe_radius=probe_radius, min_rank=min_rank,
