@@ -153,11 +153,6 @@ class ClusterWrap(base):
 
     def run(self):
         # load and concat trjs
-#        trjs = load_trjs(
-#            trj_filenames=self.trj_filenames,
-#            n_procs=self.n_procs, top=self.base_struct_md)
-#        trj_lengths = [len(t) for t in trjs]
-#        trjs = md.join(trjs)
         trj_lengths, xyzs = load_as_concatenated(
             filenames=self.trj_filenames, processes=self.n_procs,
             top=self.base_struct_md)
@@ -186,7 +181,7 @@ class ClusterWrap(base):
         trjs_sub.save_xtc(
             "./data/centers.xtc")
         full_centers = trjs[self.base_clust_obj.center_indices_]
-        full_centers.superpose(full_centers[0])
+        full_centers.superpose(self.base_struct_md)
         full_centers.save_xtc("./data/full_centers.xtc")
         # save states
         n_states = len(self.base_clust_obj.center_indices_)
