@@ -159,11 +159,6 @@ class ClusterWrap(base):
 
     def run(self):
         # load and concat trjs
-#        trjs = load_trjs(
-#            trj_filenames=self.trj_filenames,
-#            n_procs=self.n_procs, top=self.base_struct_md)
-#        trj_lengths = [len(t) for t in trjs]
-#        trjs = md.join(trjs)
         if self.mem_efficient:
             trj_lengths, xyzs = load_as_concatenated(
                 filenames=self.trj_filenames, processes=self.n_procs,

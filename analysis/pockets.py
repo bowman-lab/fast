@@ -145,7 +145,7 @@ class ResiduePockets:
         parses them for pocket sizes around selected residues."""
         pockets_dir = os.path.abspath(pockets_dir)
         # get data file names
-        pocket_files = np.sort(glob.glob(pockets_dir + "/*/pocket_sizes.dat"))
+        pocket_files = np.sort(glob.glob(pockets_dir + "/*/state*.pdb"))
         pdb_files = np.sort(glob.glob(pockets_dir + "/../centers_masses/state*.pdb"))
         # parallelize the parsing
         file_info = list(
@@ -165,7 +165,8 @@ def _determine_pocket_neighbors(file_info):
     pdb_pockets = md.load(pocket_filename)
     pdb_xyz = pdb.xyz[0, atom_indices]
     pdb_pockets_xyz = pdb_pockets.xyz[0]
-    for n in np.arange(pdb.xyz.shape[0]):
+    close_iis = []
+    for n in np.arange(pdb_xyz.shape[0]):
         diffs = np.abs(pdb_pockets_xyz - pdb_xyz[n])
         dists = np.einsum('ij,ij->i', diffs, diffs)
         close_iis.append(np.where(dists < distance_cutoff)[0])

@@ -117,7 +117,10 @@ def save_states(
         for saving states.
     """
     if state_nums is None:
-        state_nums = unique_states(assignments)
+        try:
+            state_nums = np.unique(assignments)
+        except:
+            state_nums = np.unique(np.concatenate(assignments))
     trj_filenames = np.sort(
         np.array(
             [
@@ -125,7 +128,7 @@ def save_states(
                 for s in glob.glob(msm_dir + "/trajectories/*.xtc")]))
     topology = "prot_masses.pdb"
     # reduce the number of conformations to search through
-    reduced_iis = np.where((distances > -0.1)*(distances < largest_center))
+    reduced_iis = ra.where((distances > -0.1)*(distances < largest_center))
     reduced_assignments = assignments[reduced_iis]
     reduced_distances = distances[reduced_iis]
     centers_location = []
