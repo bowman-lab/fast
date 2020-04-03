@@ -16,6 +16,7 @@ import logging
 import mdtraj as md
 import numpy as np
 from enspara.util import array as ra
+from enspara.util.load import load_as_concatenated
 from multiprocessing import Pool
 from ..base import base
 
@@ -196,16 +197,20 @@ class SaveWrap(base):
         The largest distance to a cluster center expected. Can be used
         to speed up searching for cluster centers. A reasonable value
         if the distance cutoff used for clustering.
+    save_xtc_centers : bool, default=False,
+        Optionally save centers as an xtc in data.
     n_procs : int, default=1,
         The number of processes to use when saving states.
     """
     def __init__(
             self, save_routine='full', centers='auto',
-            gen_num=0, largest_center=np.inf, n_procs=1):
+            gen_num=0, largest_center=np.inf, save_xtc_centers=False,
+            n_procs=1):
         self.save_routine = save_routine
         self.centers = centers
         self.gen_num = gen_num    
         self.largest_center = largest_center
+        self.save_xtc_centers = save_xtc_centers
         self.n_procs = n_procs
 
     @property
@@ -219,7 +224,9 @@ class SaveWrap(base):
             'centers': self.centers,
             'gen_num': self.gen_num,
             'largest_center': self.largest_center,
-            'n_procs': self.n_procs}
+            'n_procs': self.n_procs,
+            'save_xtc_centers': self.save_xtc_centers,
+            }
 
     def check_save_states(self, msm_dir):
         assigns = ra.load(msm_dir + '/data/assignments.h5')
@@ -262,3 +269,8 @@ class SaveWrap(base):
                 assignments, distances, state_nums=state_nums,
                 n_procs=self.n_procs, largest_center=self.largest_center,
                 save_routine=self.save_routine, msm_dir=msm_dir)
+        if self.save_xtc_centers:
+            center_filenames = np.sort(glob.glob("%s/centers_masses/*.pdb" % msm_dir))
+            trj_lengths, xyzs = load_as_concatenated(center_filenames, processes=self.n_procs)
+            centers = md.Trajectory(xyzs, topology=md.load("%s/prot_masses.pdb" % msm_dir).top)
+            centers.save_xtc("%s/data/full_centers.xtc" % msm_dir)
