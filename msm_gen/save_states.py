@@ -72,6 +72,7 @@ def _save_states(centers_info):
                 (states[num], confs[num])
             center = trj_full[frames[num]]
             center.save_gro(pdb_filename)
+    del trj, trj_full
     return
 
 
