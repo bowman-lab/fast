@@ -168,7 +168,7 @@ def _determine_pocket_neighbors(file_info):
     close_iis = []
     for n in np.arange(pdb_xyz.shape[0]):
         diffs = np.abs(pdb_pockets_xyz - pdb_xyz[n])
-        dists = np.einsum('ij,ij->i', diffs, diffs)
+        dists = np.sqrt(np.einsum('ij,ij->i', diffs, diffs))
         close_iis.append(np.where(dists < distance_cutoff)[0])
     close_iis = np.unique(np.concatenate(close_iis))
     return len(close_iis)
