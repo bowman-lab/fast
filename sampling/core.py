@@ -179,15 +179,25 @@ def _move_trjs(gen_dir, msm_dir, gen_num, n_kids):
                 ('%03d' % gen_num) + '_kid' + ('%03d' % kid) + '.xtc'
             output_masses = msm_dir + '/trajectories' + '/trj_gen' + \
                 ('%03d' % gen_num) + '_kid' + ('%03d' % kid) + '.xtc'
-            cmd1 = 'mv ' + kid_dir + '/frame0_aligned.xtc ' + output_full
-            cmd2 = 'mv ' + kid_dir + '/frame0_masses.xtc ' +output_masses
-            out = tools.run_commands([cmd1, cmd2])
+            cmds = []
+            if os.path.exists(output_full):
+                logging.info("file '%s' exists! skipping move." % output_full)
+            else:
+                cmds.append(
+                    'mv ' + kid_dir + '/frame0_aligned.xtc ' + output_full)
+            if os.path.exists(output_masses):
+                logging.info("file '%s' exists! skipping move." % output_masses)
+            else:
+                cmds.append(
+                    'mv ' + kid_dir + '/frame0_masses.xtc ' +output_masses)
+            if len(cmds) > 0:
+                out = tools.run_commands(cmds)
         # give sad-face expression
         except:
             raise MissingData(
-                'trajectory from gen ' + ('%03d' % gen_num) + ' and kid ' + \
-                ('%03d' % kid) + ' was not found. Simulation was likely to ' + \
-                'have crashed.')
+                'trajectory from gen %03d and kid %03d was not found.' %
+                (gen_num, kid),
+                'Simulation may have crahsed!')
     return
 
 
@@ -692,8 +702,8 @@ class AdaptiveSampling(base):
             # try to move trajectories from current gen and initiate clustering
             try:
                 # move trajectories
-                _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 logging.info('moving trajectories')
+                _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 # wait for nfs to catch up
                 time.sleep(65)
             except:

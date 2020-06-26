@@ -26,6 +26,12 @@ from ..base import base
 #######################################################################
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
 def _save_states(centers_info):
     """Save centers found within a single trajectory"""
     # get state, conf, and frame info. Also the filename and topology.
@@ -72,7 +78,10 @@ def _save_states(centers_info):
                 (states[num], confs[num])
             center = trj_full[frames[num]]
             center.save_gro(pdb_filename)
-    del trj, trj_full
+    if save_masses:
+        del trj
+    if save_restarts:
+        del trj_full
     return
 
 
@@ -173,9 +182,11 @@ def save_states(
         for pci in partitioned_centers_info:
             _save_states(pci)
     else:
-        pool = Pool(processes=n_procs)
-        pool.map(_save_states, partitioned_centers_info)
-        pool.terminate()
+        with Pool(processes=n_procs) as pool:
+            pool.map(_save_states, partitioned_centers_info)
+#        pool = Pool(processes=n_procs)
+#        pool.map(_save_states, partitioned_centers_info)
+#        pool.terminate()
     return
 
 
