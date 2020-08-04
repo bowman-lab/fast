@@ -27,6 +27,7 @@ from ..base import base
 from ..exception import DataInvalid, MissingData
 from ..msm_gen import SaveWrap
 from ..submissions import slurm_subs
+from ..submissions import lsf_subs
 from enspara.msm import builders, MSM
 from enspara.util import array as ra
 from functools import partial
@@ -493,16 +494,16 @@ class AdaptiveSampling(base):
         self.update_freq = update_freq
         self.continue_prev = continue_prev
         if sub_obj is None:
-            self.sub_obj = slurm_subs.SlurmSub(
-                'msm.q', n_cpus=24, exclusive=True)
+            self.sub_obj = lsf_subs.LSFSub(
+                'bowman', n_tasks=128, R='"model=AMDEPYC_7742"')
         else:
             self.sub_obj = sub_obj
         if q_check_obj is None:
-            self.q_check_obj = slurm_subs.SlurmWrap()
+            self.q_check_obj = lsf_subs.LSFWrap()
         else:
             self.q_check_obj = q_check_obj
         if q_check_obj_sim is None:
-            self.q_check_obj_sim = slurm_subs.SlurmWrap()
+            self.q_check_obj_sim = lsf_subs.LSFWrap()
         else:
             self.q_check_obj_sim = q_check_obj_sim
         self.output_dir = os.path.abspath(output_dir)
