@@ -35,8 +35,10 @@ class RMSDWrap(base_analysis):
         topology must match the structures to analyse. Can be provided
         as a pdb location or an md.Trajectory object.
     atom_indices : str or array,
-        The atom indices to use for computing native contacts. Can be
+        The atom indices to use for computing RMSD. Can be
         provided as a data file to load or an array.
+    atom_indices_target : str or array,
+        The atom indices to use for computing RMSD for the target structure.
 
     Attributes
     ----------
@@ -44,19 +46,28 @@ class RMSDWrap(base_analysis):
         The file containing rankings.
     """
     def __init__(
-            self, base_struct, atom_indices=None):
+            self, base_struct, atom_indices=None, atom_indices_target=None):
+
         # determine base_struct
         self.base_struct = base_struct
         if type(base_struct) is md.Trajectory:
             self.base_struct_md = self.base_struct
         else:
             self.base_struct_md = md.load(base_struct)
+
         # determine atom indices
         self.atom_indices = atom_indices
         if type(atom_indices) is str:
             self.atom_indices_vals = np.loadtxt(atom_indices, dtype=int)
         else:
             self.atom_indices_vals = self.atom_indices
+
+        # determine atom indices target
+        self.atom_indices_target = atom_indices_target
+        if type(atom_indices_target) is str:
+            self.atom_indices_target_vals = np.loadtxt(atom_indices_target, dtype=int)
+        else:
+            self.atom_indices_target_vals = self.atom_indices_target
 
     @property
     def class_name(self):
@@ -67,6 +78,7 @@ class RMSDWrap(base_analysis):
         return {
             'base_struct': self.base_struct,
             'atom_indices': self.atom_indices,
+            'atom_indices_target': self.atom_indices_target,
         }
 
     @property
@@ -87,10 +99,10 @@ class RMSDWrap(base_analysis):
                 "./data/full_centers.xtc", top=self.base_struct_md,
                 atom_indices=self.atom_indices_vals)
             # get subset if necessary
-            if self.atom_indices_vals is None:
+            if self.atom_indices_ref_vals is None:
                 struct_sub = self.base_struct_md
             else:
-                struct_sub = self.base_struct_md.atom_slice(self.atom_indices_vals)
+                struct_sub = self.base_struct_md.atom_slice(self.atom_indices_ref_vals)
             # calculate and save rmsds
             rmsds = md.rmsd(centers, struct_sub)
             np.save(self.output_name, rmsds)
