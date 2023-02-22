@@ -10,7 +10,7 @@ Welcome to fast's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   install
+   installation
    quickstart
    api
 
