@@ -14,3 +14,6 @@ If you use `fast` for your research, please cite us: [FAST Conformational Search
 
 -enspara -> which requires (MDTraj=1.8,numpy=1.14,cython, mpi4py)
 
+## Documentation
+
+The latest documentation can be found [here.](https://fast.readthedocs.io/en/latest/)
