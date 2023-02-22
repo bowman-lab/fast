@@ -83,10 +83,14 @@ class ClusterWrap(base):
     n_procs : int, default = 1,
         The number of processes to use when loading, clustering and
         saving conformations.
+    mem_efficient : bool, default=False,
+        optionally save memory by not loading all of the atoms of trajectories.
+        Saving full cluster centers should be performed by save_states if this
+        is set to True.
     """
     def __init__(
             self, base_struct, base_clust_obj=None, atom_indices=None,
-            build_full=True, n_procs=1):
+            build_full=True, n_procs=1, mem_efficient=False):
         # determine base_struct
         self.base_struct = base_struct
         if type(base_struct) is md.Trajectory:
@@ -119,6 +123,7 @@ class ClusterWrap(base):
         self.n_procs = n_procs
         self.build_full = build_full
         self.trj_filenames = None
+        self.mem_efficient = mem_efficient
 
     def check_clustering(self, msm_dir, gen_num, n_kids, verbose=True):
         correct_clustering = True
@@ -144,6 +149,7 @@ class ClusterWrap(base):
         'build_full': self.build_full,
         'n_procs': self.n_procs,
         'trj_filenames': self.trj_filenames,
+        'mem_efficient': self.mem_efficient,
         }
 
     def set_filenames(self, msm_dir):
@@ -153,16 +159,18 @@ class ClusterWrap(base):
 
     def run(self):
         # load and concat trjs
-#        trjs = load_trjs(
-#            trj_filenames=self.trj_filenames,
-#            n_procs=self.n_procs, top=self.base_struct_md)
-#        trj_lengths = [len(t) for t in trjs]
-#        trjs = md.join(trjs)
-        trj_lengths, xyzs = load_as_concatenated(
-            filenames=self.trj_filenames, processes=self.n_procs,
-            top=self.base_struct_md)
-        trjs = md.Trajectory(xyzs, self.base_struct_md.topology)
-        trjs_sub = trjs.atom_slice(self.atom_indices_vals)
+        if self.mem_efficient:
+            trj_lengths, xyzs = load_as_concatenated(
+                filenames=self.trj_filenames, processes=self.n_procs,
+                top=self.base_struct_md, atom_indices=self.atom_indices_vals)
+            trjs_sub = md.Trajectory(
+                xyzs, self.base_struct_md.atom_slice(self.atom_indices_vals).topology)
+        else:
+            trj_lengths, xyzs = load_as_concatenated(
+                filenames=self.trj_filenames, processes=self.n_procs,
+                top=self.base_struct_md)
+            trjs = md.Trajectory(xyzs, self.base_struct_md.topology)
+            trjs_sub = trjs.atom_slice(self.atom_indices_vals)
         # determine if rebuilding all msm stuff
         if self.build_full:
             base_struct_centers = self.base_struct_md.atom_slice(
@@ -185,9 +193,10 @@ class ClusterWrap(base):
         trjs_sub.superpose(trjs_sub[0])
         trjs_sub.save_xtc(
             "./data/centers.xtc")
-        full_centers = trjs[self.base_clust_obj.center_indices_]
-        full_centers.superpose(full_centers[0])
-        full_centers.save_xtc("./data/full_centers.xtc")
+        if not self.mem_efficient:
+            full_centers = trjs[self.base_clust_obj.center_indices_]
+            full_centers.superpose(self.base_struct_md)
+            full_centers.save_xtc("./data/full_centers.xtc")
         # save states
         n_states = len(self.base_clust_obj.center_indices_)
         unique_states = np.arange(n_states)

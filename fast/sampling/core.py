@@ -27,6 +27,7 @@ from ..base import base
 from ..exception import DataInvalid, MissingData
 from ..msm_gen import SaveWrap
 from ..submissions import slurm_subs
+from ..submissions import lsf_subs
 from enspara.msm import builders, MSM
 from enspara.util import array as ra
 from functools import partial
@@ -179,15 +180,25 @@ def _move_trjs(gen_dir, msm_dir, gen_num, n_kids):
                 ('%03d' % gen_num) + '_kid' + ('%03d' % kid) + '.xtc'
             output_masses = msm_dir + '/trajectories' + '/trj_gen' + \
                 ('%03d' % gen_num) + '_kid' + ('%03d' % kid) + '.xtc'
-            cmd1 = 'mv ' + kid_dir + '/frame0_aligned.xtc ' + output_full
-            cmd2 = 'mv ' + kid_dir + '/frame0_masses.xtc ' +output_masses
-            out = tools.run_commands([cmd1, cmd2])
+            cmds = []
+            if os.path.exists(output_full):
+                logging.info("file '%s' exists! skipping move." % output_full)
+            else:
+                cmds.append(
+                    'mv ' + kid_dir + '/frame0_aligned.xtc ' + output_full)
+            if os.path.exists(output_masses):
+                logging.info("file '%s' exists! skipping move." % output_masses)
+            else:
+                cmds.append(
+                    'mv ' + kid_dir + '/frame0_masses.xtc ' +output_masses)
+            if len(cmds) > 0:
+                out = tools.run_commands(cmds)
         # give sad-face expression
         except:
             raise MissingData(
-                'trajectory from gen ' + ('%03d' % gen_num) + ' and kid ' + \
-                ('%03d' % kid) + ' was not found. Simulation was likely to ' + \
-                'have crashed.')
+                'trajectory from gen %03d and kid %03d was not found.' %
+                (gen_num, kid),
+                'Simulation may have crahsed!')
     return
 
 
@@ -493,16 +504,16 @@ class AdaptiveSampling(base):
         self.update_freq = update_freq
         self.continue_prev = continue_prev
         if sub_obj is None:
-            self.sub_obj = slurm_subs.SlurmSub(
-                'msm.q', n_cpus=24, exclusive=True)
+            self.sub_obj = lsf_subs.LSFSub(
+                'bowman', n_tasks=128, R='"model=AMDEPYC_7742"')
         else:
             self.sub_obj = sub_obj
         if q_check_obj is None:
-            self.q_check_obj = slurm_subs.SlurmWrap()
+            self.q_check_obj = lsf_subs.LSFWrap()
         else:
             self.q_check_obj = q_check_obj
         if q_check_obj_sim is None:
-            self.q_check_obj_sim = slurm_subs.SlurmWrap()
+            self.q_check_obj_sim = lsf_subs.LSFWrap()
         else:
             self.q_check_obj_sim = q_check_obj_sim
         self.output_dir = os.path.abspath(output_dir)
@@ -692,8 +703,8 @@ class AdaptiveSampling(base):
             # try to move trajectories from current gen and initiate clustering
             try:
                 # move trajectories
-                _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 logging.info('moving trajectories')
+                _move_trjs(gen_dir, self.msm_dir, gen_num, self.n_kids)
                 # wait for nfs to catch up
                 time.sleep(65)
             except:

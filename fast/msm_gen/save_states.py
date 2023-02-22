@@ -16,6 +16,7 @@ import logging
 import mdtraj as md
 import numpy as np
 from enspara.util import array as ra
+from enspara.util.load import load_as_concatenated
 from multiprocessing import Pool
 from ..base import base
 
@@ -23,6 +24,12 @@ from ..base import base
 #######################################################################
 # code
 #######################################################################
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 
 def _save_states(centers_info):
@@ -71,6 +78,10 @@ def _save_states(centers_info):
                 (states[num], confs[num])
             center = trj_full[frames[num]]
             center.save_gro(pdb_filename)
+    if save_masses:
+        del trj
+    if save_restarts:
+        del trj_full
     return
 
 
@@ -116,7 +127,10 @@ def save_states(
         for saving states.
     """
     if state_nums is None:
-        state_nums = unique_states(assignments)
+        try:
+            state_nums = np.unique(assignments)
+        except:
+            state_nums = np.unique(np.concatenate(assignments))
     trj_filenames = np.sort(
         np.array(
             [
@@ -124,7 +138,7 @@ def save_states(
                 for s in glob.glob(msm_dir + "/trajectories/*.xtc")]))
     topology = "prot_masses.pdb"
     # reduce the number of conformations to search through
-    reduced_iis = np.where((distances > -0.1)*(distances < largest_center))
+    reduced_iis = ra.where((distances > -0.1)*(distances < largest_center))
     reduced_assignments = assignments[reduced_iis]
     reduced_distances = distances[reduced_iis]
     centers_location = []
@@ -168,9 +182,11 @@ def save_states(
         for pci in partitioned_centers_info:
             _save_states(pci)
     else:
-        pool = Pool(processes=n_procs)
-        pool.map(_save_states, partitioned_centers_info)
-        pool.terminate()
+        with Pool(processes=n_procs) as pool:
+            pool.map(_save_states, partitioned_centers_info)
+#        pool = Pool(processes=n_procs)
+#        pool.map(_save_states, partitioned_centers_info)
+#        pool.terminate()
     return
 
 
@@ -196,16 +212,20 @@ class SaveWrap(base):
         The largest distance to a cluster center expected. Can be used
         to speed up searching for cluster centers. A reasonable value
         if the distance cutoff used for clustering.
+    save_xtc_centers : bool, default=False,
+        Optionally save centers as an xtc in data.
     n_procs : int, default=1,
         The number of processes to use when saving states.
     """
     def __init__(
             self, save_routine='full', centers='auto',
-            gen_num=0, largest_center=np.inf, n_procs=1):
+            gen_num=0, largest_center=np.inf, save_xtc_centers=False,
+            n_procs=1):
         self.save_routine = save_routine
         self.centers = centers
         self.gen_num = gen_num    
         self.largest_center = largest_center
+        self.save_xtc_centers = save_xtc_centers
         self.n_procs = n_procs
 
     @property
@@ -219,7 +239,9 @@ class SaveWrap(base):
             'centers': self.centers,
             'gen_num': self.gen_num,
             'largest_center': self.largest_center,
-            'n_procs': self.n_procs}
+            'n_procs': self.n_procs,
+            'save_xtc_centers': self.save_xtc_centers,
+            }
 
     def check_save_states(self, msm_dir):
         assigns = ra.load(msm_dir + '/data/assignments.h5')
@@ -262,3 +284,8 @@ class SaveWrap(base):
                 assignments, distances, state_nums=state_nums,
                 n_procs=self.n_procs, largest_center=self.largest_center,
                 save_routine=self.save_routine, msm_dir=msm_dir)
+        if self.save_xtc_centers:
+            center_filenames = np.sort(glob.glob("%s/centers_masses/*.pdb" % msm_dir))
+            trj_lengths, xyzs = load_as_concatenated(center_filenames, processes=self.n_procs)
+            centers = md.Trajectory(xyzs, topology=md.load("%s/prot_masses.pdb" % msm_dir).top)
+            centers.save_xtc("%s/data/full_centers.xtc" % msm_dir)

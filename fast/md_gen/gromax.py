@@ -104,17 +104,23 @@ class Gromax(base):
     source_file : str, default = None,
         The path to a gromacs GMXRC file to source before running
         simulations.
+    env_exports : str, default=None,
+        A list of commands to submit before running a job.
     """
     def __init__(
             self, top_file, mdp_file, n_cpus=1, n_gpus=None,
             processing_obj=None, index_file=None, itp_files=None,
             submission_obj=None, max_warn=2, min_run=False, source_file=None,
-            **kwargs):
+            env_exports=None, **kwargs):
         """initialize some gromax files and parameters"""
         self.top_file = os.path.abspath(top_file)
         self.mdp_file = os.path.abspath(mdp_file)
         self.n_cpus = n_cpus
         self.n_gpus = n_gpus
+        if env_exports is None:
+            self.env_exports = ''
+        else:
+            self.env_exports = env_exports
         # If processing_obj is not specified use GromaxProcessing as
         # default.
         if processing_obj is None:
@@ -168,7 +174,8 @@ class Gromax(base):
             'submission_obj': self.submission_obj,
             'max_warn': self.max_warn,
             'min_run': self.min_run,
-            'source_file': self.source_file
+            'source_file': self.source_file,
+            'env_exports' : self.env_exports
         }
 
     def setup_run(self, struct, output_dir=None):
@@ -243,7 +250,7 @@ class Gromax(base):
             bash_check_cmd += 'else\n    echo "Found md.tpr, not running grompp"\nfi\n\n'
             grompp_cmd = bash_check_cmd
         # combine commands and submit to submission object
-        cmds = [source_cmd, grompp_cmd, mdrun_cmd]
+        cmds = [self.env_exports, source_cmd, grompp_cmd, mdrun_cmd]
         cmds.append(self.processing_obj.run())
         job_id = self.submission_obj.run(cmds, output_dir=output_dir)
         return job_id

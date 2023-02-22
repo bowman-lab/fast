@@ -2,7 +2,7 @@
 #
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
-# http://www.sphinx-doc.org/en/master/config
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
 
@@ -17,12 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'FAST'
-copyright = '2020, Maxwell I. Zimmerman'
+project = 'fast'
+copyright = '2023, Maxwell I. Zimmerman'
 author = 'Maxwell I. Zimmerman'
-
-# The full version, including alpha/beta/rc tags
-release = '2020'
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,7 +36,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 # -- Options for HTML output -------------------------------------------------
