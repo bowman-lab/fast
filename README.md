@@ -10,9 +10,9 @@ If you use `fast` for your research, please cite us: [FAST Conformational Search
 
 ## Dependencies
 
--python >= 3.6
+-python >= 3.7
 
--enspara -> which requires (MDTraj=1.8,numpy=1.14,cython, mpi4py)
+-enspara -> which requires (MDTraj=1.8, numpy=1.14, cython, mpi4py)
 
 ## Documentation
 

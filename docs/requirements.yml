@@ -1,0 +1,17 @@
+name: fast-test-conda
+channels:
+  - conda-forge
+  - defaults
+  - anaconda
+dependencies:
+  - python=3.7
+  - pip
+  - mpi4py
+  - git
+  - mdtraj
+  - cython
+
+  - pip:
+    - scikit-learn==0.21.0
+    - matplotlib==3.0.3
+    - git+https://github.com/bowman-lab/enspara

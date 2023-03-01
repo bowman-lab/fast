@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'fast'
-copyright = '2023, Maxwell I. Zimmerman'
+copyright = '2017, Maxwell I. Zimmerman'
 author = 'Maxwell I. Zimmerman'
 
 
