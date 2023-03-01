@@ -4,8 +4,8 @@ API
 .. toctree::
    :maxdepth: 3
 
-   analysis
-   md_gen
-   msm_gen
-   sampling
-   submissions
+   api/analysis
+   api/md_gen
+   api/msm_gen
+   api/sampling
+   api/submissions

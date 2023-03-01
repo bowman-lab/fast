@@ -11,7 +11,7 @@ Welcome to fast's documentation!
    :caption: Contents:
 
    installation
-   quickstart
+   tutorial
    api
 
 
