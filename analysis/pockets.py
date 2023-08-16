@@ -44,7 +44,15 @@ def _save_pocket_element(save_info):
     # make state analysis directory and save pdb coords
     _ = tools.run_commands('mkdir ' + output_folder)
     pok_output_name = output_folder + "/" + state_name + "_pockets.pdb"
-    pocket_element.save_pdb(pok_output_name)
+
+    if pocket_element is None:
+        #Recent update to enspara returns None for no pockets instead of empty MDtraj traj
+        pocket_element=md.Trajectory(np.zeros((0,3)),md.Topology())
+        pocket_element.save_pdb(pok_output_name)
+
+    else:    
+        pocket_element.save_pdb(pok_output_name)
+
     # generate pocket size array (first element is the total size)
     pok_sizes = np.array(
         [len(list(resi.atoms)) for resi in list(pocket_element.top.residues)])
