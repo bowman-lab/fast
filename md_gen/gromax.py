@@ -14,6 +14,7 @@
 import mdtraj as md
 import numpy as np
 import os
+from string import Template
 from .. import tools
 from .. import submissions
 from ..base import base
@@ -151,10 +152,10 @@ class Gromax(base):
         self.max_warn = str(max_warn)
         self.min_run = min_run
         # get full path of source_file
-        if source_file is None:
-            self.source_file = source_file
+        if source_file is not None:
+            self.source_file = os.path.abspath(Template(source_file).substitute(os.environ))
         else:
-            self.source_file = os.path.abspath(source_file)
+            self.source_file = None
         self.kwargs = kwargs
 
     @property
