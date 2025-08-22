@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fast"
+version = "0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "LGPL2.1" }
+authors = []
+dependencies = [
+  "enspara",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black",
+  "ruff",
+  "pytest"
+]
+pocketminer = [
+  "pypocketminer",
+  "scipy",
+  "trimesh",
+  "networkx",
+  "manifold3d" # TODO replace with blender
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+  "tests"
+]
